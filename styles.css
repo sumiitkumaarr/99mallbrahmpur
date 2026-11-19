@@ -1,17 +1,17 @@
 :root {
   font-family: "DM Sans", sans-serif;
-  color: #24252b;
-  background: #f5f6f8;
+  color: #242a33;
+  background: #f4f6f9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --ink: #24252b;
-  --muted: #8a8c96;
-  --line: #ececf0;
-  --purple: #6d50df;
-  --purple-dark: #5a3ccc;
+  --ink: #242a33;
+  --muted: #798392;
+  --line: #e4e9f0;
+  --purple: #5274a8;
+  --purple-dark: #3d5f93;
   --surface: #fff;
-  --canvas: #f5f6fa;
-  --card-shadow: 0 8px 26px #28223d0a;
+  --canvas: #f4f6f9;
+  --card-shadow: 0 14px 36px #26365012;
 }
 
 * { box-sizing: border-box; }
@@ -60,6 +60,10 @@ button { cursor: pointer; }
 .auth-form { display: flex; flex-direction: column; gap: 17px; }
 .auth-form label { display: flex; flex-direction: column; gap: 8px; color: #41414a; font-size: 12px; font-weight: 700; }
 .auth-form input { width: 100%; height: 46px; border: 1px solid #e8e8ed; border-radius: 8px; outline: 0; padding: 0 13px; background: #fff; color: var(--ink); font-size: 13px; font-weight: 400; transition: border-color .2s, box-shadow .2s; }
+.password-input-wrap { position: relative; display: flex; }
+.password-input-wrap input { padding-right: 68px; }
+.password-toggle { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); border: 0; padding: 5px 2px; background: transparent; color: var(--purple); font-size: 11px; font-weight: 700; }
+.password-toggle:focus-visible { border-radius: 4px; outline: 2px solid #9c87f2; outline-offset: 2px; }
 .auth-form input:focus,.filter-label input:focus,.quantity-control input:focus { border-color: #9c87f2; box-shadow: 0 0 0 3px #7455e21a; }
 .auth-form input::placeholder { color: #b3b4be; }
 .forgot-link { align-self: flex-end; margin-top: -7px; }
@@ -95,9 +99,12 @@ button { cursor: pointer; }
 .help-spark { color: #8162eb; font-size: 15px; }
 .help-card strong { display: block; margin-top: 9px; font-size: 11px; }
 .help-card p { margin: 6px 0 1px; color: #898795; font-size: 10px; line-height: 1.55; }
-.logout-button { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 15px; border: 0; border-top: 1px solid #f0eff3; padding: 15px 8px 0; background: transparent; color: #777782; text-align: left; font-size: 11px; font-weight: 600; }
-.logout-button span { font-size: 16px; }
-.logout-message { margin: 6px 8px 0; color: #bd4552; font-size: 10px; line-height: 1.4; }
+.header-account-actions { display: grid; justify-items: end; gap: 3px; }
+.logout-button { display: inline-flex; height: 40px; align-items: center; gap: 8px; border: 1px solid #e5e1ed; border-radius: 10px; padding: 0 15px; background: #fff; color: #57545f; font-size: 13px; font-weight: 700; transition: background .2s, border-color .2s; }
+.logout-button:hover { border-color: #d7d0e7; background: #f8f6fc; }
+.logout-button span { font-size: 18px; }
+.logout-message { max-width: 190px; margin: 0; color: #bd4552; font-size: 10px; line-height: 1.4; text-align: right; }
+.logout-message:empty { display: none; }
 .logout-button:disabled { cursor: wait; opacity: .6; }
 .workspace { min-height: 100vh; margin-left: 244px; }
 .topbar { position: sticky; z-index: 1; top: 0; display: flex; height: 65px; align-items: center; justify-content: space-between; border-bottom: 1px solid #eeedf1; padding: 0 5.2%; background: #ffffffed; backdrop-filter: blur(10px); }
@@ -236,6 +243,11 @@ button { cursor: pointer; }
 #billing-page .panel-heading p { color: #777783; font-size: 14px; }
 #billing-page .fixed-price { border-radius: 10px; padding: 10px 13px; font-size: 17px; }
 #billing-page .fixed-price small { font-size: 12px; }
+#billing-page .billing-mode { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; border: 0; padding: 0; }
+#billing-page .billing-mode legend { width: 100%; margin-bottom: 9px; color: #51515c; font-size: 14px; font-weight: 700; }
+#billing-page .billing-mode label { display: flex; align-items: center; gap: 8px; min-height: 42px; border: 1px solid #e4e0ed; border-radius: 10px; padding: 0 13px; color: #55545f; font-size: 13px; font-weight: 600; cursor: pointer; }
+#billing-page .billing-mode label:has(input:checked) { border-color: #9c87f2; background: #f7f5ff; color: #6048c0; }
+#billing-page .billing-mode input { margin: 0; accent-color: #7054dc; }
 #billing-page .product-line { gap: 15px; margin-top: 20px; border-color: #e9e7ef; border-radius: 14px; padding: 16px; background: #fff; }
 #billing-page .product-thumbnail { width: 52px; height: 52px; border-radius: 13px; font-size: 19px; }
 #billing-page .product-info strong { font-size: 15px; }
@@ -249,6 +261,11 @@ button { cursor: pointer; }
 #billing-page .quantity-control button:hover { border-radius: 12px; background: #f5f2ff; }
 #billing-page .quantity-control input { width: 110px; border-right: 1px solid #efedf4; border-left: 1px solid #efedf4; font-size: 22px; }
 #billing-page .quantity-entry>p { margin: 0; color: #8a8995; font-size: 12px; }
+#billing-page .manual-amount-control { display: flex; width: 232px; height: 60px; align-items: center; border: 1px solid #dcd7e9; border-radius: 14px; background: #fff; }
+#billing-page .manual-amount-control>span { padding-left: 17px; color: #6650bc; font-size: 21px; font-weight: 700; }
+#billing-page .manual-amount-control input { width: 100%; height: 100%; min-width: 0; border: 0; outline: 0; border-radius: 14px; padding: 0 14px 0 9px; color: #33333c; font-size: 22px; font-weight: 700; }
+#billing-page .manual-amount-control:focus-within { border-color: #9c87f2; box-shadow: 0 0 0 3px #7455e21a; }
+#billing-page .manual-amount-control input::placeholder { color: #b3b0bd; }
 #billing-page .bill-total { display: grid; justify-items: end; gap: 6px; margin: 0; border: 0; padding: 0 2px 6px 0; color: #666672; font-size: 15px; }
 #billing-page .bill-total strong { font-size: 30px; }
 #billing-page .bill-actions { display: flex; gap: 12px; margin-top: 25px; }
@@ -322,6 +339,7 @@ button { cursor: pointer; }
   .auth-screen { grid-template-columns: 1fr; }
   .auth-brand { display: none; }
   .auth-panel { min-height: 100vh; padding: 28px 20px; }
+  .auth-card { padding: 25px 22px; }
   .auth-heading { margin-top: 40px; }
   .sidebar { position: fixed; z-index: 20; top: auto; right: 0; bottom: 0; left: 0; display: block; width: 100%; height: auto; border: 0; border-top: 1px solid #e9e7ef; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); background: #ffffffed; box-shadow: 0 -8px 28px #28223d0d; backdrop-filter: blur(14px); }
   .sidebar-brand,.store-chip,.nav-label,.sidebar-bottom { display: none; }
@@ -334,6 +352,8 @@ button { cursor: pointer; }
   .topbar { height: 52px; padding: 0 16px; }
   .header-date { font-size: 9px; }
   .topbar-right { gap: 9px; }
+  .logout-button { height: 36px; gap: 6px; border-radius: 9px; padding: 0 10px; font-size: 11px; }
+  .logout-button span { font-size: 15px; }
   .page-content { padding: 24px 15px calc(24px + env(safe-area-inset-bottom)); }
   .page-heading h1 { font-size: clamp(24px, 7vw, 30px); }
   .heading-row { display: block; }
@@ -367,6 +387,7 @@ button { cursor: pointer; }
   #billing-page .quantity-control { width: 210px; }
   #billing-page .quantity-control button { width: 52px; }
   #billing-page .quantity-control input { width: 104px; }
+  #billing-page .manual-amount-control { width: 210px; }
   .sales-heading { align-items: flex-start; flex-direction: column; }
   .daily-report-panel { padding: 15px 12px; }
   .daily-report-heading { align-items: flex-start; flex-direction: column; }
@@ -390,6 +411,7 @@ button { cursor: pointer; }
 }
 @media (max-width: 380px) {
   .page-content { padding-right: 12px; padding-left: 12px; }
+  .header-date { display: none; }
   .report-heading-actions { gap: 7px; }
   .report-heading-actions .button { font-size: 10px; }
   #billing-page .billing-report-preview { padding-right: 12px; padding-left: 12px; }
@@ -399,3 +421,129 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+body { background: radial-gradient(ellipse at 82% 0, #e7edf6 0, transparent 36%), radial-gradient(ellipse at 4% 76%, #edf1f7 0, transparent 34%), var(--canvas); }
+.auth-screen { background: #f8faff; }
+.auth-brand { background: radial-gradient(ellipse at 80% 75%, #7596c840, transparent 42%), linear-gradient(145deg, #172334, #263b58 65%, #344e70); }
+.auth-brand::before,.auth-brand::after { border-color: #c4d5ef20; }
+.brand-mark,.brand-light .brand-mark { background: linear-gradient(145deg, #a8c3e8, #5274a8); color: #fff; box-shadow: 0 5px 16px #41649338; }
+.brand-light .brand-muted { color: #b0bfd3; }
+.brand-dark .brand-muted { color: #8299b8; }
+.brand-message .eyebrow,.brand-foot span { color: #a9c5eb; }
+.auth-panel { background: radial-gradient(ellipse at 100% 0, #e9eff8, transparent 48%), #f8faff; }
+.auth-card { border: 1px solid #e1e7f0; border-radius: 24px; padding: 34px; background: linear-gradient(155deg, #fff, #fcfdff); box-shadow: 0 22px 65px #26365016, 0 2px 6px #26365008; }
+.auth-heading .eyebrow,.text-button,.password-toggle { color: var(--purple-dark); }
+.button:focus-visible,.nav-item:focus-visible,.date-shortcut:focus-visible,.text-button:focus-visible { outline-color: #6485b588; }
+.button-primary { background: linear-gradient(135deg, #6488bb, #3e6398); color: #fff; box-shadow: 0 8px 20px #466b9d35; }
+.button-primary:hover { background: linear-gradient(135deg, #5277aa, #345788); }
+.button-secondary { border-color: #e1e7f0; background: #fff; color: #3d5f93; }
+.button-secondary:hover { background: #f3f6fb; }
+.auth-form input:focus,.filter-label input:focus,.quantity-control input:focus { border-color: #7695c1; box-shadow: 0 0 0 3px #6485b524; }
+.password-toggle:focus-visible { outline-color: #7695c1; }
+.sidebar { border-color: #e2e7ef; background: #fff; box-shadow: 8px 0 28px #2636500a; }
+.store-chip { border-color: #e5eaf1; background: linear-gradient(120deg, #fff, #f7f9fc); }
+.store-avatar,.profile-avatar { background: #e8eef7; color: #456b9f; }
+.nav-item:hover { background: #f4f7fb; color: #3d5f93; }
+.nav-item.active { background: linear-gradient(100deg, #eaf0f9, #f5f8fc); color: #3d5f93; box-shadow: inset 3px 0 #6485b5; }
+.nav-shortcut { border-color: #e4e9f0; background: #fff; }
+.help-card { border: 1px solid #dfe7f2; background: linear-gradient(145deg, #f4f7fc, #eaf0f8); }
+.help-spark { color: #5274a8; }
+.topbar { border-color: #e2e7ef; background: #ffffffed; box-shadow: 0 5px 20px #26365008; }
+.logout-button { border-color: #dce4ef; background: #fff; color: #405d86; }
+.logout-button:hover { border-color: #b6c7df; background: #f4f7fb; }
+.page-heading .eyebrow { color: #7588a3; }
+.heading-period { color: #5274a8; }
+.panel,.stat-card { border-color: #e3e8f0; background: linear-gradient(155deg, #fff, #fcfdff); box-shadow: var(--card-shadow); transition: border-color .2s, box-shadow .2s, transform .2s; }
+.panel { border-radius: 19px; }
+.stat-card { border-radius: 16px; }
+.stat-highlight { border-color: #d9e3f1; background: linear-gradient(145deg, #fff, #f0f4fa); }
+.stat-icon { background: #e8eef7; color: #5274a8; }
+.icon-lilac { background: #eef1f7; color: #687f9f; }
+.panel-heading p,.page-heading p { color: #798392; }
+.sale-row { border-color: #ebeff4; }
+.sale-amount,.table-amount { color: #405f8b !important; }
+.fixed-price { background: #edf2f9; color: #3d5f93; }
+#billing-page .bill-builder,#billing-page .billing-report-preview { position: relative; border-color: #dfe6f0; background: linear-gradient(155deg, #fff, #fbfcfe); box-shadow: 0 20px 52px #26365015, 0 2px 7px #26365008; }
+#billing-page .bill-builder::before,#billing-page .billing-report-preview::before { position: absolute; top: 0; left: 28px; right: 28px; height: 3px; border-radius: 0 0 4px 4px; background: linear-gradient(90deg, #dce7f5, #7394c1, #dce7f5); content: ""; }
+#billing-page .billing-mode label:has(input:checked) { border-color: #93aaca; background: #edf2f9; color: #3d5f93; }
+#billing-page .billing-mode label { transition: border-color .18s, background .18s, transform .18s; }
+#billing-page .billing-mode label:hover { transform: translateY(-1px); }
+#billing-page .billing-mode input { accent-color: #5274a8; }
+#billing-page .product-line { border-color: #e5eaf2; background: linear-gradient(110deg, #fff, #f7f9fc); }
+#billing-page .product-thumbnail { background: linear-gradient(145deg, #edf2f9, #dce6f3); color: #3d5f93; }
+#billing-page .quantity-control { border-color: #dce4ef; background: #fff; }
+#billing-page .quantity-control button { color: #456b9f; }
+#billing-page .quantity-control button:hover { background: #f1f5fa; }
+#billing-page .manual-amount-control { border-color: #dce4ef; background: #fff; }
+#billing-page .manual-amount-control>span { color: #456b9f; }
+#billing-page .manual-amount-control:focus-within { border-color: #7695c1; box-shadow: 0 0 0 3px #6485b524; }
+#billing-page .bill-total { min-width: 220px; border: 1px solid #e1e9f4; border-radius: 14px; padding: 13px 17px; background: linear-gradient(135deg, #f7f9fc, #edf2f9); }
+#billing-page .bill-total span { color: #667891; font-size: 11px; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
+#billing-page .bill-total strong { color: #365b8e; font-size: 32px; }
+#billing-page .print-bill-button { border-color: #dce4ef; background: #f2f5fa; color: #3d5f93; }
+#billing-page .print-bill-button:hover { background: #e7edf6; }
+.billing-report-stat { border-color: #e3e8f0; background: linear-gradient(155deg, #fff, #fbfcfe); box-shadow: 0 8px 22px #2636500b; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.billing-report-highlight { border-color: #d9e3f1; background: linear-gradient(145deg, #fff, #f0f4fa); }
+.daily-report-stats article { border-color: #e6ebf2; background: #f8fafd; }
+.daily-report-stats article strong { color: #344b6b; }
+.daily-sales-chart { border-color: #e4e9f0; }
+.bar-chart-track { background: linear-gradient(180deg, #f5f7fb, #e9eef6); }
+.bar-chart-fill { background: linear-gradient(180deg, #91add4, #5274a8); }
+.bar-chart-column:last-child .bar-chart-fill { background: linear-gradient(180deg, #8eb3d8, #4f83b7); }
+.chart-legend span { background: #5274a8; }
+.daily-report-stats article,.sales-chart-panel,.daily-report-panel,.sales-panel { box-shadow: 0 12px 30px #2636500d; }
+.daily-date-controls input:focus,.daily-date-controls select:focus { border-color: #7695c1; box-shadow: 0 0 0 3px #6485b524; }
+.date-shortcut { border-color: #dce4ef; color: #3d5f93; }
+.date-shortcut:hover { border-color: #a8bbd5; background: #f1f5fa; }
+.sales-table th { border-color: #e7ebf1; color: #8190a4; }
+.sales-table td { border-color: #edf0f5; }
+.confirmation-dialog { border-color: #e0e6ef; background: #fff; box-shadow: 0 24px 80px #1e2d4438; }
+.confirmation-dialog::backdrop { background: #192334a6; }
+.confirmation-dialog-content .eyebrow { color: #526f9f; }
+.bill-saved-dialog .confirmation-dialog-content .eyebrow { color: #526f9f; }
+.app-footer { border-color: #e2e7ef; }
+.header-date { border: 1px solid #e5eaf2; border-radius: 999px; padding: 7px 11px; background: #f8fafd; color: #687b95; }
+.profile-avatar { border: 2px solid #fff; box-shadow: 0 0 0 1px #dce5f1, 0 3px 8px #26365014; background: linear-gradient(145deg, #edf3fa, #dce7f4); }
+.profile-avatar { cursor: pointer; padding: 0; transition: box-shadow .2s, transform .2s; }
+.profile-avatar:hover { transform: translateY(-1px); box-shadow: 0 0 0 2px #cbd9eb, 0 5px 12px #2636501c; }
+.profile-avatar:focus-visible { outline: 3px solid #6485b588; outline-offset: 3px; }
+.profile-dialog { width: min(440px, calc(100% - 32px)); }
+.profile-dialog-content>.eyebrow { color: #526f9f; }
+.profile-dialog-content h2 { margin-bottom: 17px; }
+.profile-dialog-details { display: grid; gap: 10px; }
+.profile-dialog-details>div { display: grid; gap: 6px; border: 1px solid #e5eaf2; border-radius: 11px; padding: 12px 14px; background: linear-gradient(120deg, #fff, #f7f9fc); }
+.profile-dialog-details span { color: #8190a4; font-size: 11px; font-weight: 600; }
+.profile-dialog-details strong { overflow-wrap: anywhere; color: #344b6b; font-size: 14px; }
+.profile-message { min-height: 18px; margin-top: 12px !important; color: #bd4552 !important; font-size: 12px !important; }
+.profile-message:empty { display: none; }
+.profile-message.success { color: #329169 !important; }
+.profile-dialog-actions { align-items: center; }
+.profile-dialog-actions form { margin: 0; }
+.profile-dialog-actions .button { min-height: 42px; }
+.bill-saved-dialog { width: min(480px, calc(100% - 32px)); }
+.bill-saved-dialog .confirmation-dialog-content { padding: 30px; }
+.bill-saved-dialog .confirmation-dialog-content h2 { margin: 12px 0 10px; font-size: 24px; }
+#bill-saved-dialog-message { color: #27364a; font-size: 19px; font-weight: 700; line-height: 1.55; }
+.bill-saved-dialog .confirmation-dialog-actions .button { min-width: 90px; min-height: 48px; font-size: 14px; }
+@media (max-width: 420px) {
+  .profile-dialog-actions { align-items: stretch; flex-direction: column; }
+  .profile-dialog-actions>button,.profile-dialog-actions form,.profile-dialog-actions form .button { width: 100%; }
+  .bill-saved-dialog .confirmation-dialog-content { padding: 24px; }
+  .bill-saved-dialog .confirmation-dialog-content h2 { font-size: 21px; }
+  #bill-saved-dialog-message { font-size: 17px; }
+}
+.logout-button { box-shadow: 0 3px 10px #2636500a; transition: background .2s, border-color .2s, box-shadow .2s, transform .2s; }
+.logout-button:hover { box-shadow: 0 5px 13px #26365012; transform: translateY(-1px); }
+.help-card { box-shadow: inset 0 1px #ffffffc9, 0 8px 20px #2636500a; }
+.help-card>* { position: relative; z-index: 1; }
+.help-card::after { position: absolute; z-index: 0; right: -24px; bottom: -45px; width: 112px; height: 112px; border: 1px solid #7795bd28; border-radius: 50%; box-shadow: 0 0 0 13px #7795bd0a, 0 0 0 27px #7795bd08; content: ""; pointer-events: none; }
+.nav-item.active { border: 1px solid #e1e9f4; }
+.stat-card:hover,.billing-report-stat:hover { transform: translateY(-2px); border-color: #cbd9eb; box-shadow: 0 16px 30px #26365013; }
+#billing-page .product-line { transition: border-color .2s, box-shadow .2s, transform .2s; }
+#billing-page .product-line:hover { transform: translateY(-1px); border-color: #d5e0ee; box-shadow: 0 8px 18px #2636500a; }
+#billing-page .save-bill { box-shadow: 0 10px 24px #466b9d36; }
+.sale-row:hover { background: linear-gradient(90deg, #f8fafd, #fff); }
+.sales-table tbody tr:hover { background: #f7f9fc; }
+.daily-report-stats article { transition: border-color .2s, background .2s, transform .2s; }
+.daily-report-stats article:hover { transform: translateY(-2px); border-color: #d3deed; background: #f3f6fb; }
+.chart-legend span { box-shadow: 0 0 0 3px #5274a81a; }

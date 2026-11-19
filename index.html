@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f6f8" />
+    <title>99 Mall | Billing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" type="module"></script>
+  </head>
+  <body>
+    <main id="auth-screen" class="auth-screen">
+      <section class="auth-brand">
+        <a class="brand brand-light" href="#" aria-label="99 Mall home"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
+        <div class="brand-message">
+          <span class="eyebrow">YOUR STORE, IN CONTROL</span>
+          <h1>Simple billing.<br />Clearer business.</h1>
+          <p>Every sale in one place. Know what you sold today, this week, and all month.</p>
+        </div>
+        <div class="brand-foot">MADE FOR THE EVERYDAY HUSTLE <span>✳</span></div>
+      </section>
+      <section class="auth-panel">
+        <div class="auth-card">
+          <a class="brand brand-dark" href="#"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
+          <div class="auth-heading">
+            <span id="auth-kicker" class="eyebrow">WELCOME BACK</span>
+            <h2 id="auth-title">Sign in to your store</h2>
+            <p id="auth-description">Enter your details to continue to billing.</p>
+          </div>
+          <form id="login-form" class="auth-form">
+            <label>Email address<input name="email" type="email" placeholder="you@yourstore.com" autocomplete="username" required /></label>
+            <label>Password<input name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required /></label>
+            <button class="text-button forgot-link" type="button" data-auth-view="reset">Forgot password?</button>
+            <p class="form-error" aria-live="polite"></p>
+            <button class="button button-primary button-full" type="submit">Sign in <span>→</span></button>
+          </form>
+          <form id="setup-form" class="auth-form hidden">
+            <label>Your name<input name="name" type="text" placeholder="Store owner" autocomplete="name" required /></label>
+            <label>Email address<input name="email" type="email" placeholder="you@yourstore.com" autocomplete="email" required /></label>
+            <label>Create password<input name="password" type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required /></label>
+            <p class="hint">Use a strong password. Firebase can send a password reset email to this address.</p>
+            <p class="form-error" aria-live="polite"></p>
+            <button class="button button-primary button-full" type="submit">Create store account <span>→</span></button>
+          </form>
+          <form id="reset-form" class="auth-form hidden">
+            <label>Email address<input name="email" type="email" placeholder="you@yourstore.com" autocomplete="email" required /></label>
+            <p class="hint">A secure password reset link will be sent to this email address.</p>
+            <p class="form-error" aria-live="polite"></p>
+            <button class="button button-primary button-full" type="submit">Send reset email <span>→</span></button>
+          </form>
+          <p id="auth-switch" class="auth-switch"></p>
+          <p class="local-note"><span>●</span> Your store data is stored in Google Cloud</p>
+        </div>
+      </section>
+    </main>
+
+    <main id="app-screen" class="app-screen hidden">
+      <aside class="sidebar">
+        <a class="brand brand-dark sidebar-brand" href="#"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
+        <div class="store-chip"><span class="store-avatar">9</span><span><strong id="store-name">My store</strong><small>Store workspace</small></span><span class="chip-dot"></span></div>
+        <span class="nav-label">WORKSPACE</span>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-item active" type="button" data-page="billing" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
+          <button class="nav-item" type="button" data-page="sales" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="help-card"><span class="help-spark">✳</span><strong>Every item, just ₹99</strong><p>Fast checkout, no complicated catalog to manage.</p></div>
+          <button id="logout-button" class="logout-button" type="button"><span>↪</span>Sign out</button>
+          <p id="logout-message" class="logout-message" aria-live="polite"></p>
+        </div>
+      </aside>
+      <section class="workspace">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Workspace</span><span class="crumb-separator">/</span><strong id="page-breadcrumb">New bill</strong></div>
+          <div class="topbar-right"><span id="header-date" class="header-date"></span><span id="profile-avatar" class="profile-avatar">S</span></div>
+        </header>
+        <div class="page-content">
+          <section id="billing-page" class="page-section hidden">
+            <div class="page-heading"><span class="eyebrow">FAST CHECKOUT</span><h1>Create a new bill<span class="heading-period">.</span></h1><p>Add the number of items and we’ll take care of the math.</p></div>
+            <div class="billing-layout">
+              <section class="panel bill-builder">
+                <div class="panel-heading"><div><h2>Bill details</h2><p>One simple price for every item</p></div><span class="fixed-price">₹99 <small>/ item</small></span></div>
+                <div class="product-line"><div class="product-thumbnail">99</div><div class="product-info"><strong>Everyday item</strong><span>Standard store item</span></div><span class="product-price">₹99</span></div>
+                <div class="checkout-controls">
+                  <div class="quantity-entry">
+                    <label class="quantity-label" for="item-quantity">Quantity</label>
+                    <div class="quantity-control">
+                      <button id="quantity-minus" type="button" aria-label="Decrease quantity">−</button>
+                      <input id="item-quantity" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Enter item quantity" />
+                      <button id="quantity-plus" type="button" aria-label="Increase quantity">＋</button>
+                    </div>
+                    <p>Type a number or use + / −</p>
+                  </div>
+                  <div class="bill-total"><span>Total amount</span><strong id="bill-total">₹99</strong></div>
+                </div>
+                <div class="bill-actions">
+                  <button id="save-bill" class="button button-primary save-bill" type="button">Save bill <span>→</span></button>
+                  <button id="print-bill-button" class="button print-bill-button no-print" type="button">Save &amp; Print</button>
+                </div>
+                <p id="bill-message" class="bill-message" aria-live="polite"></p>
+              </section>
+            </div>
+            <section id="print-receipt" class="panel print-receipt hidden">
+              <div class="print-receipt-top">
+                <div><span class="eyebrow">99 MALL</span><h2>Bill receipt</h2></div>
+              </div>
+              <div class="print-receipt-meta">
+                <div><span>Bill number</span><strong id="receipt-bill-number">—</strong></div>
+                <div><span>Date &amp; time</span><strong id="receipt-date-time">—</strong></div>
+              </div>
+              <div class="print-receipt-line"><span>Everyday item × <strong id="receipt-quantity">0</strong></span><strong id="receipt-total">₹0</strong></div>
+              <div class="print-receipt-total"><span>Total paid</span><strong id="receipt-grand-total">₹0</strong></div>
+              <p class="print-receipt-thanks">Thank you for shopping with us!</p>
+            </section>
+            <section class="panel billing-report-preview">
+              <div class="panel-heading billing-report-heading">
+                <div><h2>Live sales &amp; reports</h2><p>Totals refresh automatically after each saved bill.</p></div>
+                <button class="text-button" type="button" data-page="sales">Full reports <span>→</span></button>
+              </div>
+              <div class="billing-report-stats">
+                <article class="billing-report-stat billing-report-highlight"><span>Today</span><strong id="billing-report-today">₹0</strong><small id="billing-report-today-count">0 bills today</small></article>
+                <article class="billing-report-stat"><span>Yesterday</span><strong id="billing-report-yesterday">₹0</strong><small id="billing-report-yesterday-count">0 bills yesterday</small></article>
+                <article class="billing-report-stat"><span>This week</span><strong id="billing-report-week">₹0</strong><small id="billing-report-week-items">0 items sold</small></article>
+                <article class="billing-report-stat"><span>This month</span><strong id="billing-report-month">₹0</strong><small id="billing-report-month-count">0 bills this month</small></article>
+              </div>
+              <div class="billing-recent-heading"><h3>Recent bills</h3><span>Latest 5</span></div>
+              <div id="billing-recent-sales" class="recent-sales billing-recent-sales"></div>
+            </section>
+          </section>
+
+          <section id="sales-page" class="page-section hidden">
+            <div class="page-heading heading-row"><div><span class="eyebrow">KNOW YOUR NUMBERS</span><h1>Sales &amp; reports<span class="heading-period">.</span></h1><p>Your saved sales, with date and time for every bill.</p></div>
+              <div class="report-heading-actions">
+                <button id="clear-sales-button" class="button button-danger" type="button">Clear sales data</button>
+                <button class="button button-primary" type="button" data-go="billing"><span>＋</span> Create new bill</button>
+              </div>
+            </div>
+            <p id="clear-sales-message" class="clear-sales-message" aria-live="polite"></p>
+            <div class="stats-grid report-stats">
+              <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="report-today">₹0</strong><div class="stat-foot"><span id="report-today-count">0 bills</span></div></article>
+              <article class="stat-card"><div class="stat-top"><span>Yesterday</span><span class="stat-icon icon-lilac">◷</span></div><strong id="report-yesterday">₹0</strong><div class="stat-foot"><span id="report-yesterday-count">0 bills yesterday</span></div></article>
+              <article class="stat-card"><div class="stat-top"><span>This week</span><span class="stat-icon icon-lilac">↗</span></div><strong id="report-week">₹0</strong><div class="stat-foot"><span id="report-week-items">0 items sold</span><span class="stat-caption">Mon – today</span></div></article>
+              <article class="stat-card"><div class="stat-top"><span>This month</span><span class="stat-icon icon-mint">▦</span></div><strong id="report-month">₹0</strong><div class="stat-foot"><span id="report-month-count">0 bills</span></div></article>
+            </div>
+            <section class="panel daily-report-panel">
+              <div class="panel-heading daily-report-heading">
+                <div><h2>Daily report</h2><p id="daily-report-date">Choose a date to view its daily report.</p></div>
+                <div class="daily-date-controls">
+                  <label class="filter-label">Calendar<input id="sales-date-filter" type="date" /></label>
+                  <label class="filter-label">Or choose a day
+                    <select id="daily-report-day-select">
+                      <option value="">Choose a day with sales</option>
+                    </select>
+                  </label>
+                  <div class="daily-report-shortcuts">
+                    <button class="date-shortcut" type="button" data-sales-date="today">Today</button>
+                    <button class="date-shortcut" type="button" data-sales-date="yesterday">Yesterday</button>
+                  </div>
+                </div>
+              </div>
+              <div class="daily-report-stats">
+                <article><span>Total sales</span><strong id="daily-report-total">—</strong></article>
+                <article><span>Bills</span><strong id="daily-report-bills">—</strong></article>
+                <article><span>Items sold</span><strong id="daily-report-items">—</strong></article>
+              </div>
+            </section>
+            <section class="panel sales-chart-panel">
+              <div class="panel-heading sales-chart-heading">
+                <div><h2>Sales trend</h2><p id="sales-chart-period">Daily totals for the last 7 days</p></div>
+                <span class="chart-legend"><span></span>Sales</span>
+              </div>
+              <div id="daily-sales-chart" class="daily-sales-chart" role="img" aria-label="Daily sales bar chart for the last 7 days"></div>
+            </section>
+            <section class="panel sales-panel">
+              <div class="panel-heading sales-heading"><div><h2>All bills</h2><p id="sales-subtitle">A complete record of your sales</p></div>
+                <div class="sales-date-controls">
+                  <button class="date-shortcut" type="button" data-sales-date="all">All bills</button>
+                </div>
+              </div>
+              <div id="sales-table-wrap" class="sales-table-wrap"></div>
+            </section>
+          </section>
+          <footer class="app-footer"><span>99<span class="footer-muted">mall</span> <span>·</span> Store billing, made simple</span><span>Price per item <strong>₹99</strong></span></footer>
+        </div>
+      </section>
+    </main>
+    <dialog id="bill-saved-dialog" class="confirmation-dialog bill-saved-dialog" aria-labelledby="bill-saved-dialog-title" aria-describedby="bill-saved-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">BILL SAVED</span>
+        <h2 id="bill-saved-dialog-title">Your bill is saved</h2>
+        <p id="bill-saved-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-primary" type="submit" value="close" autofocus>Done</button>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="clear-sales-dialog" class="confirmation-dialog" aria-labelledby="clear-sales-dialog-title" aria-describedby="clear-sales-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">CONFIRM DELETE</span>
+        <h2 id="clear-sales-dialog-title">Clear all sales data?</h2>
+        <p id="clear-sales-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep data</button>
+          <button class="button button-danger" type="submit" value="confirm">Yes, delete sales</button>
+        </form>
+      </div>
+    </dialog>
+  </body>
+</html>

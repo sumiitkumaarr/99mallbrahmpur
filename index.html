@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f5f6f8" />
+    <meta name="theme-color" content="#f4f6f9" />
     <title>99 Mall | Billing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,7 +32,7 @@
           </div>
           <form id="login-form" class="auth-form">
             <label>Email address<input name="email" type="email" placeholder="you@yourstore.com" autocomplete="username" required /></label>
-            <label>Password<input name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required /></label>
+            <label>Password<div class="password-input-wrap"><input id="login-password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required /><button id="toggle-login-password" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div></label>
             <button class="text-button forgot-link" type="button" data-auth-view="reset">Forgot password?</button>
             <p class="form-error" aria-live="polite"></p>
             <button class="button button-primary button-full" type="submit">Sign in <span>→</span></button>
@@ -67,25 +67,35 @@
           <button class="nav-item" type="button" data-page="sales" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
         </nav>
         <div class="sidebar-bottom">
-          <div class="help-card"><span class="help-spark">✳</span><strong>Every item, just ₹99</strong><p>Fast checkout, no complicated catalog to manage.</p></div>
-          <button id="logout-button" class="logout-button" type="button"><span>↪</span>Sign out</button>
-          <p id="logout-message" class="logout-message" aria-live="polite"></p>
+          <div class="help-card"><span class="help-spark">✳</span><strong>₹99 standard, manual option</strong><p>Quick quantity billing or enter another item's price.</p></div>
         </div>
       </aside>
       <section class="workspace">
         <header class="topbar">
           <div class="breadcrumb"><span>Workspace</span><span class="crumb-separator">/</span><strong id="page-breadcrumb">New bill</strong></div>
-          <div class="topbar-right"><span id="header-date" class="header-date"></span><span id="profile-avatar" class="profile-avatar">S</span></div>
+          <div class="topbar-right">
+            <span id="header-date" class="header-date"></span>
+            <button id="profile-avatar" class="profile-avatar" type="button" aria-label="Open account details" aria-haspopup="dialog" aria-controls="profile-dialog">S</button>
+            <div class="header-account-actions">
+              <button id="logout-button" class="logout-button" type="button"><span aria-hidden="true">↪</span>Sign out</button>
+              <p id="logout-message" class="logout-message" aria-live="polite"></p>
+            </div>
+          </div>
         </header>
         <div class="page-content">
           <section id="billing-page" class="page-section hidden">
             <div class="page-heading"><span class="eyebrow">FAST CHECKOUT</span><h1>Create a new bill<span class="heading-period">.</span></h1><p>Add the number of items and we’ll take care of the math.</p></div>
             <div class="billing-layout">
               <section class="panel bill-builder">
-                <div class="panel-heading"><div><h2>Bill details</h2><p>One simple price for every item</p></div><span class="fixed-price">₹99 <small>/ item</small></span></div>
-                <div class="product-line"><div class="product-thumbnail">99</div><div class="product-info"><strong>Everyday item</strong><span>Standard store item</span></div><span class="product-price">₹99</span></div>
+                <div class="panel-heading"><div><h2>Bill details</h2><p>Choose standard pricing or enter a custom amount</p></div><span id="fixed-price" class="fixed-price">₹99 <small>/ item</small></span></div>
+                <fieldset class="billing-mode">
+                  <legend>Billing type</legend>
+                  <label><input name="billing-mode" type="radio" value="standard" checked /> ₹99 per item</label>
+                  <label><input name="billing-mode" type="radio" value="manual" /> Manual amount</label>
+                </fieldset>
+                <div class="product-line"><div class="product-thumbnail">99</div><div class="product-info"><strong>Everyday item</strong><span>Standard store item</span></div><span id="product-price" class="product-price">₹99</span></div>
                 <div class="checkout-controls">
-                  <div class="quantity-entry">
+                  <div id="quantity-entry" class="quantity-entry">
                     <label class="quantity-label" for="item-quantity">Quantity</label>
                     <div class="quantity-control">
                       <button id="quantity-minus" type="button" aria-label="Decrease quantity">−</button>
@@ -93,6 +103,11 @@
                       <button id="quantity-plus" type="button" aria-label="Increase quantity">＋</button>
                     </div>
                     <p>Type a number or use + / −</p>
+                  </div>
+                  <div id="manual-amount-entry" class="quantity-entry hidden">
+                    <label class="quantity-label" for="manual-amount">Bill amount</label>
+                    <div class="manual-amount-control"><span>₹</span><input id="manual-amount" type="number" min="1" step="1" placeholder="150" inputmode="numeric" aria-label="Enter manual bill amount in rupees" /></div>
+                    <p>Enter the total amount for this bill</p>
                   </div>
                   <div class="bill-total"><span>Total amount</span><strong id="bill-total">₹99</strong></div>
                 </div>
@@ -111,7 +126,7 @@
                 <div><span>Bill number</span><strong id="receipt-bill-number">—</strong></div>
                 <div><span>Date &amp; time</span><strong id="receipt-date-time">—</strong></div>
               </div>
-              <div class="print-receipt-line"><span>Everyday item × <strong id="receipt-quantity">0</strong></span><strong id="receipt-total">₹0</strong></div>
+              <div class="print-receipt-line"><span id="receipt-description">Everyday item × 0</span><strong id="receipt-total">₹0</strong></div>
               <div class="print-receipt-total"><span>Total paid</span><strong id="receipt-grand-total">₹0</strong></div>
               <p class="print-receipt-thanks">Thank you for shopping with us!</p>
             </section>
@@ -183,7 +198,7 @@
               <div id="sales-table-wrap" class="sales-table-wrap"></div>
             </section>
           </section>
-          <footer class="app-footer"><span>99<span class="footer-muted">mall</span> <span>·</span> Store billing, made simple</span><span>Price per item <strong>₹99</strong></span></footer>
+          <footer class="app-footer"><span>99<span class="footer-muted">mall</span> <span>·</span> Store billing, made simple</span><span>Standard item price <strong>₹99</strong></span></footer>
         </div>
       </section>
     </main>
@@ -206,6 +221,21 @@
           <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep data</button>
           <button class="button button-danger" type="submit" value="confirm">Yes, delete sales</button>
         </form>
+      </div>
+    </dialog>
+    <dialog id="profile-dialog" class="confirmation-dialog profile-dialog" aria-labelledby="profile-dialog-title" aria-describedby="profile-message">
+      <div class="confirmation-dialog-content profile-dialog-content">
+        <span class="eyebrow">YOUR ACCOUNT</span>
+        <h2 id="profile-dialog-title">Account details</h2>
+        <div class="profile-dialog-details">
+          <div><span>Store name</span><strong id="profile-name">—</strong></div>
+          <div><span>Email address</span><strong id="profile-email">—</strong></div>
+        </div>
+        <p id="profile-message" class="profile-message" aria-live="polite"></p>
+        <div class="confirmation-dialog-actions profile-dialog-actions">
+          <button id="profile-reset-button" class="button button-secondary" type="button">Send password reset link</button>
+          <form method="dialog"><button class="button button-primary" type="submit" value="close">Done</button></form>
+        </div>
       </div>
     </dialog>
   </body>

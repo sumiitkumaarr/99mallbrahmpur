@@ -106,6 +106,10 @@ function showAuth(view) {
     form.reset();
     form.querySelector(".form-error").textContent = "";
   });
+  $("#login-password").type = "password";
+  $("#toggle-login-password").textContent = "Show";
+  $("#toggle-login-password").setAttribute("aria-label", "Show password");
+  $("#toggle-login-password").setAttribute("aria-pressed", "false");
   const setup = view === "setup";
   const reset = view === "reset";
   $("#auth-kicker").textContent = setup ? "LET'S GET YOU SET UP" : reset ? "ACCOUNT RECOVERY" : "WELCOME BACK";
@@ -295,10 +299,10 @@ function renderDailySalesChart(sales) {
     }).join("");
 }
 
-function confirmSalesDeletion(count) {
+function confirmSalesDeletion() {
     const dialog = $("#clear-sales-dialog");
     $("#clear-sales-dialog-message").textContent =
-      `Permanently delete all ${count} bills and sales reports? Your login account will not be deleted.`;
+      "Are you sure you want to permanently delete all saved bills and sales reports? Your login account will not be deleted.";
     dialog.returnValue = "";
 
     return new Promise((resolve) => {
@@ -317,6 +321,9 @@ async function clearSalesData() {
     status.classList.remove("success");
 
     try {
+      const confirmed = await confirmSalesDeletion();
+      if (!confirmed) return;
+
       const snapshot = await getDocs(query(
         collection(db, "sales"),
         where("ownerId", "==", auth.currentUser.uid),
@@ -325,9 +332,6 @@ async function clearSalesData() {
         status.textContent = "There are no sales to clear.";
         return;
       }
-
-      const confirmed = await confirmSalesDeletion(snapshot.size);
-      if (!confirmed) return;
 
       let deletedCount = 0;
       for (let start = 0; start < snapshot.docs.length; start += 500) {
@@ -353,11 +357,49 @@ async function clearSalesData() {
 function showPrintReceipt(sale) {
     $("#receipt-bill-number").textContent = sale.id;
     $("#receipt-date-time").textContent = `${formatDate(sale.date)} · ${formatTime(sale.time)}`;
-    $("#receipt-quantity").textContent = String(sale.quantity);
+    $("#receipt-description").textContent = sale.manualAmount
+      ? "Manual amount"
+      : `Everyday item × ${sale.quantity}`;
     $("#receipt-total").textContent = formatCurrency(sale.total);
     $("#receipt-grand-total").textContent = formatCurrency(sale.total);
     $("#print-receipt").classList.remove("hidden");
     $("#print-bill-button").classList.remove("hidden");
+}
+
+function showProfileDialog() {
+  $("#profile-name").textContent = account?.name || "My store";
+  $("#profile-email").textContent = account?.email || "No email address";
+  const message = $("#profile-message");
+  message.textContent = "";
+  message.classList.remove("error", "success");
+  $("#profile-reset-button").disabled = !account?.email;
+  $("#profile-dialog").showModal();
+}
+
+async function sendAccountPasswordReset() {
+  const button = $("#profile-reset-button");
+  const message = $("#profile-message");
+  const email = account?.email;
+  message.textContent = "";
+  message.classList.remove("error", "success");
+  if (!email) {
+    message.textContent = "No email address is associated with this account.";
+    message.classList.add("error");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    message.textContent = `Password reset email sent to ${email}.`;
+    message.classList.add("success");
+  } catch (error) {
+    console.error("Could not send account password reset email:", error);
+    message.textContent = authErrorMessage(error);
+    message.classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function showBillSavedDialog(quantity, total) {
@@ -367,7 +409,7 @@ function showBillSavedDialog(quantity, total) {
     dialog.showModal();
     window.setTimeout(() => {
       if (dialog.open) dialog.close();
-    }, 1000);
+    }, 2200);
 }
 
 function refreshDateReport() {
@@ -381,13 +423,19 @@ function setPage(page) {
   currentPage = page;
   if (page === "billing") {
     $("#item-quantity").value = "1";
+    document.querySelector('input[name="billing-mode"][value="standard"]').checked = true;
+    $("#manual-amount-entry").classList.add("hidden");
+    $("#quantity-entry").classList.remove("hidden");
+    $("#manual-amount").value = "";
+    $("#fixed-price").innerHTML = "₹99 <small>/ item</small>";
+    $("#product-price").textContent = "₹99";
     $("#bill-message").textContent = "";
     $("#bill-message").classList.remove("error");
     $("#print-receipt").classList.add("hidden");
     billPendingSave = true;
     $("#print-bill-button").textContent = "Save & Print";
-    const quantity = updateQuantity({ inputId: "item-quantity", totalId: "bill-total", buttonId: "save-bill" });
-    $("#print-bill-button").disabled = quantity === null;
+    const bill = updateBillTotal();
+    $("#print-bill-button").disabled = bill === null;
   }
   document.querySelectorAll(".page-section").forEach((section) => section.classList.add("hidden"));
   $(`#${page}-page`).classList.remove("hidden");
@@ -503,21 +551,20 @@ async function handlePasswordReset(event) {
   }
 }
 
-function updateQuantity({ inputId, totalId, buttonId }) {
-  const field = $(`#${inputId}`);
+function updateBillTotal() {
+  const manualMode = document.querySelector('input[name="billing-mode"]:checked').value === "manual";
+  const field = manualMode ? $("#manual-amount") : $("#item-quantity");
   const parsed = Number(field.value);
-  const maxQuantity = Math.floor(Number.MAX_SAFE_INTEGER / PRICE_PER_ITEM);
-  const isValid = field.value.trim() !== "" && Number.isSafeInteger(parsed) && parsed > 0 && parsed <= maxQuantity;
-  const saveButton = $(`#${buttonId}`);
-  saveButton.disabled = !isValid;
-  if (!isValid) {
-    $(`#${totalId}`).textContent = "—";
-    return null;
-  }
-  const quantity = parsed;
-  const total = quantity * PRICE_PER_ITEM;
-  $(`#${totalId}`).textContent = formatCurrency(total);
-  return quantity;
+  const quantity = manualMode ? 1 : parsed;
+  const total = manualMode ? parsed : parsed * PRICE_PER_ITEM;
+  const isValid = field.value.trim() !== ""
+    && Number.isSafeInteger(parsed)
+    && parsed > 0
+    && Number.isSafeInteger(total);
+  $("#save-bill").disabled = !isValid;
+  $("#print-bill-button").disabled = !isValid;
+  $("#bill-total").textContent = isValid ? formatCurrency(total) : "—";
+  return isValid ? { quantity, total, manualAmount: manualMode } : null;
 }
 
 async function loadSales() {
@@ -550,18 +597,15 @@ async function createBill({
   const message = $(`#${messageId}`);
   message.textContent = "";
   message.classList.remove("error");
-  const quantity = updateQuantity({ inputId, totalId, buttonId });
-  if (quantity === null) {
-    message.textContent = "Enter a whole number of items greater than zero.";
+  const bill = updateBillTotal();
+  if (bill === null) {
+    message.textContent = document.querySelector('input[name="billing-mode"]:checked').value === "manual"
+      ? "Enter a whole amount greater than zero."
+      : "Enter a whole number of items greater than zero.";
     message.classList.add("error");
     return;
   }
-  const total = quantity * PRICE_PER_ITEM;
-  if (!Number.isSafeInteger(total)) {
-    message.textContent = "That quantity is too large. Please enter a smaller number.";
-    message.classList.add("error");
-    return;
-  }
+  const { quantity, total, manualAmount } = bill;
   button.disabled = true;
   printButton.disabled = true;
   try {
@@ -573,7 +617,8 @@ async function createBill({
       id: billNumber,
       billNumber,
       quantity,
-      unitPrice: PRICE_PER_ITEM,
+      unitPrice: manualAmount ? total : PRICE_PER_ITEM,
+      manualAmount,
       total,
       date,
       time,
@@ -586,13 +631,15 @@ async function createBill({
     showPrintReceipt(sale);
     await loadSales();
     const quantityField = $(`#${inputId}`);
-    quantityField.value = "1";
+    if (!manualAmount) quantityField.value = "1";
     billPendingSave = false;
     printButton.textContent = "Print bill";
-    updateQuantity({ inputId, totalId, buttonId });
-    message.textContent = `Your bill is saved — ${quantity} ${quantity === 1 ? "item" : "items"}, ${formatCurrency(total)}.`;
+    updateBillTotal();
+    message.textContent = manualAmount
+      ? `Your bill is saved for ${formatCurrency(total)}.`
+      : `Your bill is saved — ${quantity} ${quantity === 1 ? "item" : "items"}, ${formatCurrency(total)}.`;
     button.blur();
-    quantityField.focus();
+    (manualAmount ? $("#manual-amount") : quantityField).focus();
     updateDashboard();
     if (showSavedDialog) showBillSavedDialog(quantity, total);
     if (printAfterSave) window.print();
@@ -600,7 +647,7 @@ async function createBill({
     message.textContent = error.message;
     message.classList.add("error");
   } finally {
-    printButton.disabled = updateQuantity({ inputId, totalId, buttonId }) === null;
+    if (billPendingSave) updateBillTotal();
   }
 }
 
@@ -631,6 +678,16 @@ document.addEventListener("click", (event) => {
 forms.setup.addEventListener("submit", handleSetup);
 forms.login.addEventListener("submit", handleLogin);
 forms.reset.addEventListener("submit", handlePasswordReset);
+$("#profile-avatar").addEventListener("click", showProfileDialog);
+$("#profile-reset-button").addEventListener("click", sendAccountPasswordReset);
+$("#toggle-login-password").addEventListener("click", (event) => {
+  const password = $("#login-password");
+  const showPassword = password.type === "password";
+  password.type = showPassword ? "text" : "password";
+  event.currentTarget.textContent = showPassword ? "Hide" : "Show";
+  event.currentTarget.setAttribute("aria-label", `${showPassword ? "Hide" : "Show"} password`);
+  event.currentTarget.setAttribute("aria-pressed", String(showPassword));
+});
 $("#logout-button").addEventListener("click", async (event) => {
   const button = event.currentTarget;
   const message = $("#logout-message");
@@ -648,7 +705,7 @@ $("#logout-button").addEventListener("click", async (event) => {
     button.disabled = false;
   }
 });
-function adjustQuantity(inputId, totalId, buttonId, increment) {
+function adjustQuantity(inputId, increment) {
   const field = $(`#${inputId}`);
   const parsed = Number(field.value);
   const maxQuantity = Math.floor(Number.MAX_SAFE_INTEGER / PRICE_PER_ITEM);
@@ -656,38 +713,41 @@ function adjustQuantity(inputId, totalId, buttonId, increment) {
   field.value = String(Math.min(maxQuantity, Math.max(1, current + increment)));
   billPendingSave = true;
   $("#print-bill-button").textContent = "Save & Print";
-  $("#print-bill-button").disabled = updateQuantity({ inputId, totalId, buttonId }) === null;
+  updateBillTotal();
 }
 
-const billInputs = [
-  {
-    inputId: "item-quantity",
-    totalId: "bill-total",
-    buttonId: "save-bill",
-    minusId: "quantity-minus",
-    plusId: "quantity-plus",
-  },
-];
-
-billInputs.forEach(({ inputId, totalId, buttonId, minusId, plusId }) => {
-  $(`#${inputId}`).addEventListener("input", () => {
+$("#item-quantity").addEventListener("input", () => {
+  billPendingSave = true;
+  $("#print-bill-button").textContent = "Save & Print";
+  updateBillTotal();
+});
+$("#item-quantity").addEventListener("blur", (event) => {
+  if (event.currentTarget.value.trim() === "") {
+    event.currentTarget.value = "1";
     billPendingSave = true;
     $("#print-bill-button").textContent = "Save & Print";
-    $("#print-bill-button").disabled = updateQuantity({ inputId, totalId, buttonId }) === null;
-  });
-  $(`#${inputId}`).addEventListener("blur", (event) => {
-    if (event.currentTarget.value.trim() === "") {
-      event.currentTarget.value = "1";
-      billPendingSave = true;
-      $("#print-bill-button").textContent = "Save & Print";
-      $("#print-bill-button").disabled = updateQuantity({ inputId, totalId, buttonId }) === null;
-    }
-  });
-  $(`#${minusId}`).addEventListener("click", () =>
-    adjustQuantity(inputId, totalId, buttonId, -1));
-  $(`#${plusId}`).addEventListener("click", () =>
-    adjustQuantity(inputId, totalId, buttonId, 1));
+    updateBillTotal();
+  }
 });
+$("#manual-amount").addEventListener("input", () => {
+  billPendingSave = true;
+  $("#print-bill-button").textContent = "Save & Print";
+  updateBillTotal();
+});
+document.querySelectorAll('input[name="billing-mode"]').forEach((input) => {
+  input.addEventListener("change", (event) => {
+    const manualMode = event.currentTarget.value === "manual";
+    $("#quantity-entry").classList.toggle("hidden", manualMode);
+    $("#manual-amount-entry").classList.toggle("hidden", !manualMode);
+    $("#fixed-price").innerHTML = manualMode ? "Custom <small>amount</small>" : "₹99 <small>/ item</small>";
+    $("#product-price").textContent = manualMode ? "Custom" : "₹99";
+    billPendingSave = true;
+    $("#print-bill-button").textContent = "Save & Print";
+    updateBillTotal();
+  });
+});
+$("#quantity-minus").addEventListener("click", () => adjustQuantity("item-quantity", -1));
+$("#quantity-plus").addEventListener("click", () => adjustQuantity("item-quantity", 1));
 
 $("#save-bill").addEventListener("click", () => createBill({
   inputId: "item-quantity",
@@ -707,6 +767,7 @@ $("#print-bill-button").addEventListener("click", () => {
     buttonId: "save-bill",
     messageId: "bill-message",
     printAfterSave: true,
+    showSavedDialog: true,
   });
 });
 $("#sales-date-filter").addEventListener("input", refreshDateReport);

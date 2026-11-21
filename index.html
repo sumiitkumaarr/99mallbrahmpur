@@ -91,9 +91,30 @@
         </header>
         <div class="page-content">
           <section id="billing-page" class="page-section hidden">
+            <section class="dashboard-welcome" aria-labelledby="dashboard-greeting">
+              <div class="welcome-copy">
+                <div class="welcome-eyebrow"><span class="welcome-live-dot"></span> STORE OVERVIEW <span class="welcome-today">TODAY</span></div>
+                <h1 id="dashboard-greeting">Welcome back.</h1>
+                <p>Your checkout is ready. Create a bill or catch up on how your store is doing.</p>
+                <div class="welcome-actions">
+                  <a class="button welcome-primary" href="#bill-builder">Start a new bill <span aria-hidden="true">→</span></a>
+                  <button class="welcome-report-link" type="button" data-page="sales">Explore sales reports <span aria-hidden="true">↗</span></button>
+                </div>
+              </div>
+              <div class="welcome-art" aria-hidden="true">
+                <div class="welcome-orbit welcome-orbit-outer"></div>
+                <div class="welcome-orbit welcome-orbit-inner"></div>
+                <div class="welcome-price-card">
+                  <span class="welcome-card-label">QUICK CHECKOUT</span>
+                  <strong>₹99</strong>
+                  <small>Simple standard pricing</small>
+                </div>
+                <div class="welcome-feature-tag"><span>✦</span> Manual billing too</div>
+              </div>
+            </section>
             <div class="page-heading"><span class="eyebrow">FAST CHECKOUT</span><h1>Create a new bill<span class="heading-period">.</span></h1><p>Add the number of items and we’ll take care of the math.</p></div>
             <div class="billing-layout">
-              <section class="panel bill-builder">
+              <section id="bill-builder" class="panel bill-builder">
                 <div class="panel-heading"><div><h2>Bill details</h2><p>Choose standard pricing or enter a custom amount</p></div><span id="fixed-price" class="fixed-price">₹99 <small>/ item</small></span></div>
                 <fieldset class="billing-mode">
                   <legend>Billing type</legend>

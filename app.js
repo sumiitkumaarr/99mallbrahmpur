@@ -546,6 +546,7 @@ async function saveStoreName(event) {
     $("#store-name").textContent = name;
     $("#profile-name").textContent = name;
     $("#profile-avatar").textContent = name.slice(0, 1).toUpperCase();
+    $("#dashboard-greeting").textContent = `Welcome back, ${name}.`;
     form.classList.add("hidden");
     $("#profile-edit-name-button").classList.remove("hidden");
     message.textContent = "Store name updated.";
@@ -647,6 +648,7 @@ async function enterApp() {
   appScreen.classList.remove("hidden");
   $("#store-name").textContent = account.name || "My store";
   $("#profile-avatar").textContent = (account.name || "S").slice(0, 1).toUpperCase();
+  $("#dashboard-greeting").textContent = `Welcome back, ${account.name}.`;
   $("#header-date").textContent = new Date().toLocaleDateString("en-IN", {
     weekday: "short", day: "numeric", month: "short",
   });

@@ -509,11 +509,54 @@ function showPrintReceipt(sale) {
 function showProfileDialog() {
   $("#profile-name").textContent = account?.name || "My store";
   $("#profile-email").textContent = account?.email || "No email address";
+  $("#store-name-input").value = account?.name || "My store";
+  $("#store-name-form").classList.add("hidden");
+  $("#profile-edit-name-button").classList.remove("hidden");
   const message = $("#profile-message");
   message.textContent = "";
   message.classList.remove("error", "success");
   $("#profile-reset-button").disabled = !account?.email;
   $("#profile-dialog").showModal();
+}
+
+async function saveStoreName(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const name = $("#store-name-input").value.trim();
+  const button = $("#save-store-name-button");
+  const message = $("#profile-message");
+  message.textContent = "";
+  message.classList.remove("error", "success");
+
+  if (!name || name.length > 60) {
+    message.textContent = "Enter a store name between 1 and 60 characters.";
+    message.classList.add("error");
+    return;
+  }
+  if (!auth.currentUser) {
+    message.textContent = "Sign in again before changing your store name.";
+    message.classList.add("error");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await updateProfile(auth.currentUser, { displayName: name });
+    account.name = name;
+    $("#store-name").textContent = name;
+    $("#profile-name").textContent = name;
+    $("#profile-avatar").textContent = name.slice(0, 1).toUpperCase();
+    form.classList.add("hidden");
+    $("#profile-edit-name-button").classList.remove("hidden");
+    message.textContent = "Store name updated.";
+    message.classList.add("success");
+  } catch (error) {
+    console.error("Could not update store name:", error);
+    message.textContent = "Could not update the store name. Please try again.";
+    message.classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function sendAccountPasswordReset() {
@@ -840,6 +883,19 @@ forms.login.addEventListener("submit", handleLogin);
 forms.reset.addEventListener("submit", handlePasswordReset);
 $("#profile-avatar").addEventListener("click", showProfileDialog);
 $("#profile-reset-button").addEventListener("click", sendAccountPasswordReset);
+$("#profile-edit-name-button").addEventListener("click", () => {
+  $("#profile-message").textContent = "";
+  $("#profile-message").classList.remove("error", "success");
+  $("#profile-edit-name-button").classList.add("hidden");
+  $("#store-name-form").classList.remove("hidden");
+  $("#store-name-input").focus();
+});
+$("#cancel-store-name-button").addEventListener("click", () => {
+  $("#store-name-input").value = account?.name || "My store";
+  $("#store-name-form").classList.add("hidden");
+  $("#profile-edit-name-button").classList.remove("hidden");
+});
+$("#store-name-form").addEventListener("submit", saveStoreName);
 $("#toggle-login-password").addEventListener("click", (event) => {
   const password = $("#login-password");
   const showPassword = password.type === "password";

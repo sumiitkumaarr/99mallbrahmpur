@@ -20,6 +20,11 @@
           <span class="eyebrow">YOUR STORE, IN CONTROL</span>
           <h1>Simple billing.<br />Clearer business.</h1>
           <p>Every sale in one place. Know what you sold today, this week, and all month.</p>
+          <div class="auth-feature-list" aria-label="Store tools">
+            <div><span class="auth-feature-icon">＋</span><span><strong>Quick checkout</strong><small>Save a bill in seconds</small></span></div>
+            <div><span class="auth-feature-icon">↗</span><span><strong>Live sales</strong><small>See your totals as they grow</small></span></div>
+            <div><span class="auth-feature-icon">▤</span><span><strong>Clear reports</strong><small>Every bill, easy to find</small></span></div>
+          </div>
         </div>
         <div class="brand-foot">MADE FOR THE EVERYDAY HUSTLE <span>✳</span></div>
       </section>
@@ -27,6 +32,7 @@
         <div class="auth-card">
           <a class="brand brand-dark" href="#"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
           <div class="auth-heading">
+            <span class="auth-secure-note"><span></span> SECURE STORE PORTAL</span>
             <span id="auth-kicker" class="eyebrow">WELCOME BACK</span>
             <h2 id="auth-title">Sign in to your store</h2>
             <p id="auth-description">Enter your details to continue to billing.</p>
@@ -252,6 +258,15 @@
           <div><span>Store name</span><strong id="profile-name">—</strong></div>
           <div><span>Email address</span><strong id="profile-email">—</strong></div>
         </div>
+        <button id="profile-edit-name-button" class="text-button profile-edit-name-button" type="button">Edit store name</button>
+        <form id="store-name-form" class="store-name-form hidden">
+          <label for="store-name-input">New store name</label>
+          <input id="store-name-input" name="storeName" type="text" maxlength="60" autocomplete="organization" required />
+          <div class="store-name-form-actions">
+            <button id="cancel-store-name-button" class="button button-secondary" type="button">Cancel</button>
+            <button id="save-store-name-button" class="button button-primary" type="submit">Save name</button>
+          </div>
+        </form>
         <p id="profile-message" class="profile-message" aria-live="polite"></p>
         <div class="confirmation-dialog-actions profile-dialog-actions">
           <button id="profile-reset-button" class="button button-secondary" type="button">Send password reset link</button>

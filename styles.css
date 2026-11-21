@@ -16,7 +16,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 .hidden { display: none !important; }
 .brand { display: inline-flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; font-family: "Manrope", sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -1px; }
@@ -224,13 +224,14 @@ button { cursor: pointer; }
 .bar-chart-date { color: #9594a0; font-size: 10px; }
 .sales-table { width: 100%; border-collapse: collapse; text-align: left; }
 .sales-table-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
-.sales-table { min-width: 540px; }
+.sales-table { min-width: 760px; }
 .sales-table th { border-top: 1px solid #f0eff3; border-bottom: 1px solid #f0eff3; padding: 11px 8px; color: #a0a0aa; font-size: 9px; font-weight: 600; }
 .sales-table td { border-bottom: 1px solid #f3f2f5; padding: 12px 8px; color: #50505b; font-size: 10px; }
 .sales-table tr:last-child td { border-bottom: 0; }
 .sales-table td:first-child { color: #363640; font-weight: 700; }
 .table-amount { color: #33333d !important; font-weight: 700; }
 .sales-empty { padding: 40px 10px; color: #9696a1; text-align: center; font-size: 11px; }
+.delete-sale-button { min-height: 32px; padding: 0 10px; font-size: 11px; }
 
 #billing-page .page-heading { margin-bottom: 30px; }
 #billing-page > .page-heading { display: none; }
@@ -266,6 +267,11 @@ button { cursor: pointer; }
 #billing-page .manual-amount-control input { width: 100%; height: 100%; min-width: 0; border: 0; outline: 0; border-radius: 14px; padding: 0 14px 0 9px; color: #33333c; font-size: 22px; font-weight: 700; }
 #billing-page .manual-amount-control:focus-within { border-color: #9c87f2; box-shadow: 0 0 0 3px #7455e21a; }
 #billing-page .manual-amount-control input::placeholder { color: #b3b0bd; }
+#billing-page .manual-remarks-label { display: block; margin-top: 9px; color: #51515c; font-size: 13px; font-weight: 700; }
+#billing-page .manual-remarks-label span { color: #898899; font-size: 11px; font-weight: 500; }
+#billing-page #manual-remarks { width: min(100%, 430px); min-height: 82px; resize: vertical; border: 1px solid #dce4ef; border-radius: 10px; padding: 11px 12px; color: #33333c; font-size: 13px; line-height: 1.5; }
+#billing-page #manual-remarks:focus { border-color: #7695c1; outline: 0; box-shadow: 0 0 0 3px #6485b524; }
+#billing-page #manual-remarks::placeholder { color: #a4a8b1; }
 #billing-page .bill-total { display: grid; justify-items: end; gap: 6px; margin: 0; border: 0; padding: 0 2px 6px 0; color: #666672; font-size: 15px; }
 #billing-page .bill-total strong { font-size: 30px; }
 #billing-page .bill-actions { display: flex; gap: 12px; margin-top: 25px; }
@@ -285,6 +291,9 @@ button { cursor: pointer; }
 .print-receipt-line,.print-receipt-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 0; }
 .print-receipt-line { border-bottom: 1px solid #eeecf3; color: #393844; font-size: 13px; }
 .print-receipt-line>strong { font-size: 14px; }
+.print-receipt-remarks { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid #eeecf3; padding: 12px 0; }
+.print-receipt-remarks span { flex: 0 0 auto; color: #777783; font-size: 12px; }
+.print-receipt-remarks strong { color: #393844; font-size: 12px; font-weight: 500; overflow-wrap: anywhere; text-align: right; }
 .print-receipt-total { padding-bottom: 0; }
 .print-receipt-total strong { color: #292832; font: 800 20px "Manrope", sans-serif; }
 .print-receipt-thanks { margin: 18px 0 0; color: #777783; text-align: center; font-size: 12px; }

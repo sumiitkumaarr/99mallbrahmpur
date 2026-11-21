@@ -22,6 +22,7 @@ import {
   getFirestore,
   serverTimestamp,
   setDoc,
+  deleteDoc,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
@@ -207,10 +208,12 @@ function renderSalesTable(sales) {
   }
   container.innerHTML = `
     <table class="sales-table">
-      <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Items</th><th>Amount</th></tr></thead>
+      <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Items</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
       <tbody>${filtered.map((sale) => `
         <tr><td>${escapeHTML(sale.id)}</td><td>${formatDate(sale.date)}</td><td>${formatTime(sale.time)}</td>
-        <td>${sale.quantity}</td><td class="table-amount">${formatCurrency(sale.total)}</td></tr>
+        <td>${sale.quantity}</td><td>${sale.manualAmount ? escapeHTML(sale.remarks || "—") : "—"}</td>
+        <td class="table-amount">${formatCurrency(sale.total)}</td>
+        <td><button class="button button-danger delete-sale-button" type="button" data-delete-sale="${escapeHTML(sale.firestoreId)}" aria-label="Delete bill ${escapeHTML(sale.id)}">Delete</button></td></tr>
       `).join("")}</tbody>
     </table>`;
 }
@@ -312,6 +315,43 @@ function confirmSalesDeletion() {
     });
 }
 
+function confirmBillDeletion(sale) {
+  const dialog = $("#delete-bill-dialog");
+  $("#delete-bill-dialog-message").textContent =
+    `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}? This will also update your sales reports.`;
+  dialog.returnValue = "";
+
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "confirm");
+    }, { once: true });
+    dialog.showModal();
+  });
+}
+
+async function deleteSale(sale, button) {
+  const status = $("#delete-bill-message");
+  button.disabled = true;
+  status.textContent = "";
+  status.classList.remove("success");
+
+  try {
+    const confirmed = await confirmBillDeletion(sale);
+    if (!confirmed) return;
+
+    await deleteDoc(doc(db, "sales", sale.firestoreId));
+    sales = sales.filter((item) => item.firestoreId !== sale.firestoreId);
+    updateDashboard();
+    status.textContent = `${sale.id} deleted.`;
+    status.classList.add("success");
+  } catch (error) {
+    console.error("Could not delete bill:", error);
+    status.textContent = `Could not delete ${sale.id}: ${error.message}`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function clearSalesData() {
     const button = $("#clear-sales-button");
     const status = $("#clear-sales-message");
@@ -356,6 +396,8 @@ function showPrintReceipt(sale) {
     $("#receipt-description").textContent = sale.manualAmount
       ? "Manual amount"
       : `Everyday item × ${sale.quantity}`;
+    $("#receipt-remarks").textContent = sale.remarks || "";
+    $("#receipt-remarks-row").classList.toggle("hidden", !sale.remarks);
     $("#receipt-total").textContent = formatCurrency(sale.total);
     $("#receipt-grand-total").textContent = formatCurrency(sale.total);
     $("#print-receipt").classList.remove("hidden");
@@ -423,6 +465,7 @@ function setPage(page) {
     $("#manual-amount-entry").classList.add("hidden");
     $("#quantity-entry").classList.remove("hidden");
     $("#manual-amount").value = "";
+    $("#manual-remarks").value = "";
     $("#fixed-price").innerHTML = "₹99 <small>/ item</small>";
     $("#product-price").textContent = "₹99";
     $("#bill-message").textContent = "";
@@ -553,14 +596,16 @@ function updateBillTotal() {
   const parsed = Number(field.value);
   const quantity = manualMode ? 1 : parsed;
   const total = manualMode ? parsed : parsed * PRICE_PER_ITEM;
+  const remarks = manualMode ? $("#manual-remarks").value.trim() : "";
   const isValid = field.value.trim() !== ""
     && Number.isSafeInteger(parsed)
     && parsed > 0
-    && Number.isSafeInteger(total);
+    && Number.isSafeInteger(total)
+    && (!manualMode || (remarks.length > 0 && remarks.length <= 300));
   $("#save-bill").disabled = !isValid;
   $("#print-bill-button").disabled = !isValid;
   $("#bill-total").textContent = isValid ? formatCurrency(total) : "—";
-  return isValid ? { quantity, total, manualAmount: manualMode } : null;
+  return isValid ? { quantity, total, manualAmount: manualMode, remarks } : null;
 }
 
 async function loadSales() {
@@ -577,8 +622,9 @@ async function loadSales() {
       await batch.commit();
     }
     sales = snapshot.docs.map((saleDoc) => ({
-      id: saleDoc.id,
       ...saleDoc.data(),
+      firestoreId: saleDoc.id,
+      id: saleDoc.data().id || saleDoc.id,
     })).sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
   } catch (error) {
     console.error("Could not load sales:", error);
@@ -601,13 +647,18 @@ async function createBill({
   message.classList.remove("error");
   const bill = updateBillTotal();
   if (bill === null) {
-    message.textContent = document.querySelector('input[name="billing-mode"]:checked').value === "manual"
-      ? "Enter a whole amount greater than zero."
+    const manualMode = document.querySelector('input[name="billing-mode"]:checked').value === "manual";
+    const parsedAmount = Number($("#manual-amount").value);
+    const validAmount = $("#manual-amount").value.trim() !== ""
+      && Number.isSafeInteger(parsedAmount)
+      && parsedAmount > 0;
+    message.textContent = manualMode
+      ? validAmount ? "Add a reason in Remarks for this manual bill." : "Enter a whole amount greater than zero."
       : "Enter a whole number of items greater than zero.";
     message.classList.add("error");
     return;
   }
-  const { quantity, total, manualAmount } = bill;
+  const { quantity, total, manualAmount, remarks } = bill;
   button.disabled = true;
   printButton.disabled = true;
   try {
@@ -621,6 +672,7 @@ async function createBill({
       quantity,
       unitPrice: manualAmount ? total : PRICE_PER_ITEM,
       manualAmount,
+      ...(manualAmount ? { remarks } : {}),
       total,
       date,
       time,
@@ -654,9 +706,12 @@ async function createBill({
 }
 
 document.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-auth-view], [data-go], [data-page], [data-sales-date]");
+  const target = event.target.closest("[data-auth-view], [data-go], [data-page], [data-sales-date], [data-delete-sale]");
   if (!target) return;
-  if (target.dataset.authView) {
+  if (target.dataset.deleteSale) {
+    const sale = sales.find((item) => item.firestoreId === target.dataset.deleteSale);
+    if (sale) deleteSale(sale, target);
+  } else if (target.dataset.authView) {
     showAuth(target.dataset.authView);
   } else if (target.dataset.salesDate) {
     const filter = $("#sales-date-filter");
@@ -732,6 +787,11 @@ $("#item-quantity").addEventListener("blur", (event) => {
   }
 });
 $("#manual-amount").addEventListener("input", () => {
+  billPendingSave = true;
+  $("#print-bill-button").textContent = "Save & Print";
+  updateBillTotal();
+});
+$("#manual-remarks").addEventListener("input", () => {
   billPendingSave = true;
   $("#print-bill-button").textContent = "Save & Print";
   updateBillTotal();

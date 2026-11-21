@@ -40,6 +40,10 @@ service cloud.firestore {
             request.resource.data.manualAmount == true
             && request.resource.data.quantity == 1
             && request.resource.data.unitPrice == request.resource.data.total
+            && request.resource.data.keys().hasAll(['remarks'])
+            && request.resource.data.remarks is string
+            && request.resource.data.remarks.size() > 0
+            && request.resource.data.remarks.size() <= 300
           )
           || (
             request.resource.data.manualAmount == false

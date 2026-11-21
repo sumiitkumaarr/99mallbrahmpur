@@ -108,6 +108,9 @@
                     <label class="quantity-label" for="manual-amount">Bill amount</label>
                     <div class="manual-amount-control"><span>₹</span><input id="manual-amount" type="number" min="1" step="1" placeholder="150" inputmode="numeric" aria-label="Enter manual bill amount in rupees" /></div>
                     <p>Enter the total amount for this bill</p>
+                    <label class="manual-remarks-label" for="manual-remarks">Remarks <span>(required)</span></label>
+                    <textarea id="manual-remarks" maxlength="300" rows="3" placeholder="Why is this manual bill being added?" aria-describedby="manual-remarks-hint"></textarea>
+                    <p id="manual-remarks-hint">Add a short reason for this manual bill (up to 300 characters).</p>
                   </div>
                   <div class="bill-total"><span>Total amount</span><strong id="bill-total">₹99</strong></div>
                 </div>
@@ -127,6 +130,7 @@
                 <div><span>Date &amp; time</span><strong id="receipt-date-time">—</strong></div>
               </div>
               <div class="print-receipt-line"><span id="receipt-description">Everyday item × 0</span><strong id="receipt-total">₹0</strong></div>
+              <div id="receipt-remarks-row" class="print-receipt-remarks hidden"><span>Remarks</span><strong id="receipt-remarks"></strong></div>
               <div class="print-receipt-total"><span>Total paid</span><strong id="receipt-grand-total">₹0</strong></div>
               <p class="print-receipt-thanks">Thank you for shopping with us!</p>
             </section>
@@ -154,6 +158,7 @@
               </div>
             </div>
             <p id="clear-sales-message" class="clear-sales-message" aria-live="polite"></p>
+            <p id="delete-bill-message" class="clear-sales-message" aria-live="polite"></p>
             <div class="stats-grid report-stats">
               <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="report-today">₹0</strong><div class="stat-foot"><span id="report-today-count">0 bills</span></div></article>
               <article class="stat-card"><div class="stat-top"><span>Yesterday</span><span class="stat-icon icon-lilac">◷</span></div><strong id="report-yesterday">₹0</strong><div class="stat-foot"><span id="report-yesterday-count">0 bills yesterday</span></div></article>
@@ -220,6 +225,17 @@
         <form method="dialog" class="confirmation-dialog-actions">
           <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep data</button>
           <button class="button button-danger" type="submit" value="confirm">Yes, delete sales</button>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="delete-bill-dialog" class="confirmation-dialog" aria-labelledby="delete-bill-dialog-title" aria-describedby="delete-bill-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">CONFIRM DELETE</span>
+        <h2 id="delete-bill-dialog-title">Delete this bill?</h2>
+        <p id="delete-bill-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep bill</button>
+          <button class="button button-danger" type="submit" value="confirm">Yes, delete bill</button>
         </form>
       </div>
     </dialog>

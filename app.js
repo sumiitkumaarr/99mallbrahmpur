@@ -197,13 +197,35 @@ function updateDashboard() {
 
 function renderSalesTable(sales) {
   const filter = $("#sales-date-filter").value;
-  const filtered = filter ? sales.filter((sale) => sale.date === filter) : sales;
-  $("#sales-subtitle").textContent = filter
-    ? `Showing ${filtered.length} ${filtered.length === 1 ? "bill" : "bills"} for ${formatDate(filter)}`
+  const rawSearch = $("#bill-search-input").value.trim();
+  const search = rawSearch.toLowerCase().replace(/[₹,\s]/g, "");
+  let filtered = filter ? sales.filter((sale) => sale.date === filter) : sales;
+  if (search) {
+    filtered = filtered.filter((sale) => {
+      const searchableValues = [
+        sale.id,
+        sale.billNumber,
+        sale.quantity,
+        sale.total,
+        sale.remarks,
+        sale.manualAmount ? "manual" : "standard",
+      ];
+      return searchableValues.some((value) =>
+        String(value || "").toLowerCase().replace(/[₹,\s]/g, "").includes(search),
+      );
+    });
+  }
+  const filterParts = [];
+  if (filter) filterParts.push(`for ${formatDate(filter)}`);
+  if (rawSearch) filterParts.push(`matching "${rawSearch}"`);
+  $("#sales-subtitle").textContent = filterParts.length
+    ? `Showing ${filtered.length} ${filtered.length === 1 ? "bill" : "bills"} ${filterParts.join(" ")}`
     : `${sales.length} ${sales.length === 1 ? "bill" : "bills"} recorded`;
   const container = $("#sales-table-wrap");
   if (!filtered.length) {
-    container.innerHTML = '<div class="sales-empty">No bills found for this date.</div>';
+    container.innerHTML = search || filter
+      ? '<div class="sales-empty">No bills found for this search or date.</div>'
+      : '<div class="sales-empty">No bills found.</div>';
     return;
   }
   container.innerHTML = `
@@ -458,6 +480,7 @@ async function clearSalesData() {
 
       sales = [];
       $("#sales-date-filter").value = "";
+      $("#bill-search-input").value = "";
       updateDashboard();
       status.textContent = `${deletedCount} bills and reports deleted.`;
       status.classList.add("success");
@@ -802,6 +825,7 @@ document.addEventListener("click", (event) => {
       filter.value = localDateKey(yesterday);
     } else {
       filter.value = "";
+      $("#bill-search-input").value = "";
     }
     refreshDateReport();
   } else if (target.dataset.go) {
@@ -912,6 +936,7 @@ $("#print-bill-button").addEventListener("click", () => {
   });
 });
 $("#sales-date-filter").addEventListener("input", refreshDateReport);
+$("#bill-search-input").addEventListener("input", refreshDateReport);
 $("#clear-sales-button").addEventListener("click", clearSalesData);
 $("#daily-report-day-select").addEventListener("change", (event) => {
   $("#sales-date-filter").value = event.currentTarget.value;

@@ -1,4 +1,5 @@
 const PRICE_PER_ITEM = 99;
+const SHARED_STORE_ID = "99mallbrahmpur";
 const ALLOWED_EMAILS = new Set([
   "sumiitkumar.it@gmail.com",
   "amiitkumar.it@gmail.com",
@@ -19,10 +20,8 @@ import {
   doc,
   getDocs,
   getFirestore,
-  query,
   serverTimestamp,
   setDoc,
-  where,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
@@ -324,10 +323,7 @@ async function clearSalesData() {
       const confirmed = await confirmSalesDeletion();
       if (!confirmed) return;
 
-      const snapshot = await getDocs(query(
-        collection(db, "sales"),
-        where("ownerId", "==", auth.currentUser.uid),
-      ));
+      const snapshot = await getDocs(collection(db, "sales"));
       if (snapshot.empty) {
         status.textContent = "There are no sales to clear.";
         return;
@@ -569,11 +565,17 @@ function updateBillTotal() {
 
 async function loadSales() {
   try {
-    const salesQuery = query(
-      collection(db, "sales"),
-      where("ownerId", "==", auth.currentUser.uid),
+    const snapshot = await getDocs(collection(db, "sales"));
+    const legacySales = snapshot.docs.filter(
+      (saleDoc) => saleDoc.data().ownerId !== SHARED_STORE_ID,
     );
-    const snapshot = await getDocs(salesQuery);
+    for (let start = 0; start < legacySales.length; start += 500) {
+      const batch = writeBatch(db);
+      legacySales.slice(start, start + 500).forEach((saleDoc) => {
+        batch.update(saleDoc.ref, { ownerId: SHARED_STORE_ID });
+      });
+      await batch.commit();
+    }
     sales = snapshot.docs.map((saleDoc) => ({
       id: saleDoc.id,
       ...saleDoc.data(),
@@ -624,7 +626,7 @@ async function createBill({
       time,
     };
     await addDoc(collection(db, "sales"), {
-      ownerId: auth.currentUser.uid,
+      ownerId: SHARED_STORE_ID,
       ...sale,
       createdAt: serverTimestamp(),
     });
@@ -806,8 +808,4 @@ onAuthStateChanged(auth, async (user) => {
     appScreen.classList.add("hidden");
     showAuth("login");
   }
-});
-
-billInputs.forEach((controls) => {
-  $("#print-bill-button").disabled = updateQuantity(controls) === null;
 });

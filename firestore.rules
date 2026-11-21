@@ -2,6 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function sharedStoreId() {
+      return '99mallbrahmpur';
+    }
+
     function isAllowedEmail() {
       return request.auth != null
         && request.auth.token.email in [
@@ -21,16 +25,32 @@ service cloud.firestore {
     }
 
     match /sales/{saleId} {
-      allow read: if isAllowedEmail()
-        && resource.data.ownerId == request.auth.uid;
+      allow read: if isAllowedEmail();
       allow create: if isAllowedEmail()
-        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == sharedStoreId()
         && request.resource.data.quantity is int
         && request.resource.data.quantity > 0
-        && request.resource.data.unitPrice == 99
-        && request.resource.data.total == request.resource.data.quantity * 99;
-      allow update, delete: if isAllowedEmail()
-        && resource.data.ownerId == request.auth.uid;
+        && request.resource.data.unitPrice is int
+        && request.resource.data.unitPrice > 0
+        && request.resource.data.total is int
+        && request.resource.data.total > 0
+        && request.resource.data.manualAmount is bool
+        && (
+          (
+            request.resource.data.manualAmount == true
+            && request.resource.data.quantity == 1
+            && request.resource.data.unitPrice == request.resource.data.total
+          )
+          || (
+            request.resource.data.manualAmount == false
+            && request.resource.data.unitPrice == 99
+            && request.resource.data.total == request.resource.data.quantity * 99
+          )
+        );
+      allow update: if isAllowedEmail()
+        && request.resource.data.ownerId == sharedStoreId()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerId']);
+      allow delete: if isAllowedEmail();
     }
   }
 }

@@ -17,8 +17,9 @@ The app connects directly to Firebase from the browser.
 - Firebase Authentication handles account creation, login, logout, and password resets.
 - Only `sumiitkumar.it@gmail.com` and `amiitkumar.it@gmail.com` are allowed to sign in.
 - Firestore stores account records in `accounts/{uid}`.
-- Firestore stores sales in `sales/{saleId}` with an `ownerId`.
-- An authenticated owner can clear all sales from the Sales & reports page; the login account is preserved.
+- Firestore stores sales in the shared `sales` collection. Both allowed email accounts see, add, and clear the same bills; legacy bills are moved to the shared store ID when the app loads.
+- Standard bills are validated at ₹99 per item, while manual bills can use any positive whole-rupee amount.
+- Either allowed account can clear all sales from the Sales & reports page; login accounts are preserved.
 - Publish the updated `firestore.rules` in Firebase Console after changing access rules.
 
 ## Build and deploy

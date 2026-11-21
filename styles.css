@@ -214,7 +214,7 @@ button { cursor: pointer; }
 .sales-chart-heading p { margin: 4px 0 0; color: #858591; font-size: 12px; }
 .chart-legend { display: flex; align-items: center; gap: 7px; color: #777783; font-size: 11px; }
 .chart-legend span { width: 9px; height: 9px; border-radius: 3px; background: #7657e7; }
-.daily-sales-chart { display: grid; min-height: 220px; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; border-bottom: 1px solid #eeecf3; padding: 10px 6px 0; }
+.daily-sales-chart { width: 100%; height: 220px; min-height: 220px; }
 .bar-chart-column { display: grid; min-width: 0; grid-template-rows: 22px minmax(100px, 1fr) 20px 20px; justify-items: center; gap: 4px; }
 .bar-chart-value { overflow: hidden; max-width: 100%; color: #74727f; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .bar-chart-track { display: flex; width: min(100%, 54px); height: 100%; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 10px 10px 3px 3px; background: linear-gradient(180deg, #f8f6ff, #f1eef9); }
@@ -409,7 +409,7 @@ button { cursor: pointer; }
   .daily-report-stats article span { font-size: 9px; }
   .daily-report-stats article strong { overflow-wrap: anywhere; font-size: 16px; }
   .sales-chart-panel { padding: 16px 12px 14px; }
-  .daily-sales-chart { min-height: 190px; gap: 5px; padding-right: 0; padding-left: 0; }
+  .daily-sales-chart { height: 190px; min-height: 190px; gap: 5px; padding-right: 0; padding-left: 0; }
   .bar-chart-column { grid-template-rows: 20px minmax(85px, 1fr) 18px 18px; gap: 3px; }
   .bar-chart-value { font-size: 9px; }
   .bar-chart-weekday { font-size: 10px; }

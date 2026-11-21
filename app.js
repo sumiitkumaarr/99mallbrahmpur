@@ -282,23 +282,102 @@ function renderDailySalesChart(sales) {
     const rangeEnd = formatDate(days[days.length - 1].key);
     $("#sales-chart-period").textContent = `Daily totals from ${rangeStart} to ${rangeEnd}`;
     const chart = $("#daily-sales-chart");
+    const labels = days.map((day) =>
+      new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(day.date),
+    );
+    const fullLabels = days.map((day) =>
+      new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(day.date),
+    );
     chart.setAttribute("aria-label", days.map((day) =>
       `${formatDate(day.key)}: ${formatCurrency(day.total)}, ${day.bills} bills`
     ).join(". "));
-    chart.innerHTML = days.map((day) => {
-      const height = day.total ? Math.max(4, (day.total / maxTotal) * 100) : 0;
-      const weekday = new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(day.date);
-      const dayOfMonth = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(day.date);
-      const title = `${formatDate(day.key)} · ${formatCurrency(day.total)} · ${day.bills} ${day.bills === 1 ? "bill" : "bills"}`;
-      return `
-        <div class="bar-chart-column" title="${title}">
-          <span class="bar-chart-value">${day.total ? `₹${shortCurrency.format(day.total)}` : "₹0"}</span>
-          <div class="bar-chart-track"><span class="bar-chart-fill" style="height: ${height}%"></span></div>
-          <span class="bar-chart-weekday">${weekday}</span>
-          <span class="bar-chart-date">${dayOfMonth}</span>
-        </div>
-      `;
-    }).join("");
+
+    if (!window.echarts) {
+      chart.innerHTML = '<div class="sales-empty">Sales chart could not be loaded. Please refresh the page.</div>';
+      return;
+    }
+
+    const instance = echarts.getInstanceByDom(chart) || echarts.init(chart, null, { renderer: "canvas" });
+    instance.setOption({
+      animationDuration: 650,
+      animationEasing: "cubicOut",
+      textStyle: { fontFamily: "DM Sans, sans-serif", color: "#798392" },
+      grid: { top: 46, right: 12, bottom: 48, left: 48 },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow", shadowStyle: { color: "rgba(82, 116, 168, 0.08)" } },
+        backgroundColor: "rgba(255, 255, 255, 0.96)",
+        borderColor: "#dfe6f0",
+        borderWidth: 1,
+        padding: [10, 12],
+        textStyle: { color: "#353b45", fontSize: 12 },
+        extraCssText: "border-radius:10px;box-shadow:0 12px 30px rgba(38,54,80,.12)",
+        formatter(params) {
+          const point = params[0];
+          const index = point.dataIndex;
+          const day = days[index];
+          return `<div style="font-weight:700;margin-bottom:5px">${formatDate(day.key)}</div>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5274a8;margin-right:7px"></span>
+            Sales <b style="margin-left:8px">${formatCurrency(day.total)}</b>
+            <div style="color:#8b94a0;margin-top:4px">${day.bills} ${day.bills === 1 ? "bill" : "bills"}</div>`;
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: labels,
+        axisLine: { lineStyle: { color: "#e7ebf2" } },
+        axisTick: { show: false },
+        axisLabel: {
+          margin: 12,
+          color: "#687080",
+          fontSize: 11,
+          fontWeight: 600,
+          formatter(value, index) {
+            return `${value}\n${fullLabels[index]}`;
+          },
+          rich: {},
+        },
+      },
+      yAxis: {
+        type: "value",
+        min: 0,
+        max: maxTotal,
+        splitNumber: 4,
+        axisLabel: {
+          margin: 10,
+          color: "#98a0aa",
+          fontSize: 10,
+          formatter(value) {
+            if (value === 0) return "₹0";
+            return `₹${shortCurrency.format(value)}`;
+          },
+        },
+        splitLine: { lineStyle: { color: "#edf0f4", type: "dashed" } },
+      },
+      series: [{
+        name: "Sales",
+        type: "bar",
+        barMaxWidth: 42,
+        data: days.map((day, index) => ({
+          value: day.total,
+          itemStyle: {
+            borderRadius: [8, 8, 3, 3],
+            color: index === days.length - 1
+              ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: "#7ea4cd" },
+                  { offset: 1, color: "#5274a8" },
+                ])
+              : new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: "#b0c3df" },
+                  { offset: 1, color: "#6688b3" },
+                ]),
+          },
+        })),
+        emphasis: {
+          itemStyle: { borderRadius: [8, 8, 3, 3], shadowBlur: 12, shadowColor: "rgba(82,116,168,.20)" },
+        },
+      }],
+    }, true);
 }
 
 function confirmSalesDeletion() {
@@ -837,6 +916,15 @@ $("#clear-sales-button").addEventListener("click", clearSalesData);
 $("#daily-report-day-select").addEventListener("change", (event) => {
   $("#sales-date-filter").value = event.currentTarget.value;
   refreshDateReport();
+});
+let chartResizeFrame = 0;
+window.addEventListener("resize", () => {
+  window.cancelAnimationFrame(chartResizeFrame);
+  chartResizeFrame = window.requestAnimationFrame(() => {
+    const chart = $("#daily-sales-chart");
+    const instance = window.echarts?.getInstanceByDom(chart);
+    instance?.resize();
+  });
 });
 document.addEventListener("keydown", (event) => {
   if ((event.key === "b" || event.key === "B") && !event.target.matches("input,textarea")) {

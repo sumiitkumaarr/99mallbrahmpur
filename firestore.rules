@@ -36,5 +36,9 @@ service cloud.firestore {
     match /goldmedal_sales/{saleId} {
       allow read, write: if isAllowedEmail();
     }
+
+    match /bill_counters/{counterId} {
+      allow read, write: if isAllowedEmail();
+    }
   }
 }

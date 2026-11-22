@@ -17,6 +17,9 @@ import {
   serverTimestamp,
   setDoc,
   deleteDoc,
+  getDoc,
+  runTransaction,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const PRICE_PER_ITEM = 99;
@@ -32,17 +35,24 @@ const PROJECTS = {
     avatar: "99",
     defaultPage: "billing",
     pages: ["billing", "sales", "expenses"],
-    collections: ["sales", "expenses"],
+    collections: ["sales", "expenses", "bill_counters"],
   },
   "aimur-goldmedal": {
     label: "Goldmedal Electrical",
     avatar: "A",
     defaultPage: "goldmedal",
     pages: ["goldmedal"],
-    collections: ["goldmedal_sales"],
+    collections: ["goldmedal_sales", "bill_counters"],
   },
 };
 const PROJECT_STORAGE_KEY = "99mall-active-project";
+const BILL_TYPES = {
+  standard: { collection: "sales", prefix: "99BILL", label: "99 Mall" },
+  manual: { collection: "sales", prefix: "MANBILL", label: "Manual" },
+  expense: { collection: "expenses", prefix: "MISEXPBILL", label: "Misc. expenses" },
+  goldmedal: { collection: "goldmedal_sales", prefix: "GOLMEDALBILL", label: "Goldmedal Electrical" },
+};
+let billNumberMigrationPromise = null;
 
 function getStoredProject() {
   try {
@@ -88,6 +98,7 @@ const dataLoadLabels = {
   sales: "sales",
   expenses: "expenses",
   goldmedal_sales: "Goldmedal sales",
+  bill_counters: "sequential bill numbering",
 };
 
 function updateDataLoadWarning() {
@@ -203,6 +214,92 @@ function createdAtMillis(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function billNumber(type, sequence) {
+  const { prefix } = BILL_TYPES[type];
+  return `${prefix}-${String(sequence).padStart(4, "0")}`;
+}
+
+async function saveNumberedRecord(type, data) {
+  await ensureBillNumberMigration();
+  const billType = BILL_TYPES[type];
+  const counterRef = doc(db, "bill_counters", type);
+  const recordRef = doc(collection(db, billType.collection));
+  return runTransaction(db, async (transaction) => {
+    const counterSnapshot = await transaction.get(counterRef);
+    const sequence = (counterSnapshot.data()?.current || 0) + 1;
+    const number = billNumber(type, sequence);
+    const record = {
+      ownerId: SHARED_STORE_ID,
+      ...data,
+      id: number,
+      billNumber: number,
+      billType: billType.label,
+      billTypeKey: type,
+      createdAt: serverTimestamp(),
+    };
+    transaction.set(counterRef, { current: sequence, updatedAt: serverTimestamp() });
+    transaction.set(recordRef, record);
+    return { ...record, firestoreId: recordRef.id };
+  });
+}
+
+function recordOrder(left, right) {
+  const leftCreated = createdAtMillis(left.data.createdAt);
+  const rightCreated = createdAtMillis(right.data.createdAt);
+  if (leftCreated && rightCreated && leftCreated !== rightCreated) {
+    return leftCreated - rightCreated;
+  }
+  const leftDate = `${left.data.date || ""} ${left.data.time || ""}`;
+  const rightDate = `${right.data.date || ""} ${right.data.time || ""}`;
+  return leftDate.localeCompare(rightDate) || left.id.localeCompare(right.id);
+}
+
+async function migrateBillTypeNumbers(type) {
+  const billType = BILL_TYPES[type];
+  const counterRef = doc(db, "bill_counters", type);
+  if ((await getDoc(counterRef)).exists()) return;
+
+  const snapshot = await getDocs(collection(db, billType.collection));
+  const records = snapshot.docs
+    .map((recordDoc) => ({ id: recordDoc.id, ref: recordDoc.ref, data: recordDoc.data() }))
+    .filter(({ data }) => {
+      if (type === "manual") return data.manualAmount === true || data.billTypeKey === "manual";
+      if (type === "standard") return data.manualAmount !== true && data.billTypeKey !== "manual";
+      return true;
+    })
+    .sort(recordOrder);
+
+  for (let start = 0; start < records.length; start += 400) {
+    const batch = writeBatch(db);
+    const chunk = records.slice(start, start + 400);
+    chunk.forEach((record, index) => {
+      const number = billNumber(type, start + index + 1);
+      batch.set(record.ref, {
+        id: number,
+        billNumber: number,
+        billType: billType.label,
+        billTypeKey: type,
+      }, { merge: true });
+    });
+    await batch.commit();
+  }
+  await setDoc(counterRef, { current: records.length, updatedAt: serverTimestamp() });
+}
+
+function ensureBillNumberMigration() {
+  if (!billNumberMigrationPromise) {
+    billNumberMigrationPromise = (async () => {
+      for (const type of Object.keys(BILL_TYPES)) {
+        await migrateBillTypeNumbers(type);
+      }
+    })().catch((error) => {
+      billNumberMigrationPromise = null;
+      throw error;
+    });
+  }
+  return billNumberMigrationPromise;
+}
+
 function showAuth(view) {
   Object.entries(forms).forEach(([name, form]) => {
     form.classList.toggle("hidden", name !== view);
@@ -236,7 +333,7 @@ function renderSalesList(container, sales, limit = Infinity) {
   }
   container.innerHTML = sales.slice(0, limit).map((sale) => `
     <article class="sale-row">
-      <div><div class="sale-id">${escapeHTML(sale.id)}</div><div class="sale-meta">${formatDate(sale.date)} · ${formatTime(sale.time)}</div></div>
+      <div><div class="sale-id">${escapeHTML(sale.id)}</div><div class="sale-meta">${escapeHTML(sale.billType || (sale.manualAmount ? "Manual" : "99 Mall"))} · ${formatDate(sale.date)} · ${formatTime(sale.time)}</div></div>
       <span class="sale-quantity">${sale.quantity} ${sale.quantity === 1 ? "item" : "items"}</span>
       <strong class="sale-amount">${formatCurrency(sale.total)}</strong>
     </article>
@@ -277,7 +374,8 @@ function salesByCategory(sales) {
   const category = $("#sales-category-filter")?.value || "all";
   if (category === "expense") {
     return expenses.map((expense) => ({
-      id: `EXP-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
+      id: expense.billNumber || `MISEXPBILL-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
+      billNumber: expense.billNumber,
       firestoreId: expense.firestoreId,
       date: expense.date,
       time: "00:00",
@@ -393,9 +491,10 @@ function renderSalesTable(sales) {
   if (selectedCategory === "expense") {
     container.innerHTML = `
       <table class="sales-table expense-table">
-        <thead><tr><th>Date</th><th>Category</th><th>Remarks</th><th>Amount</th></tr></thead>
+        <thead><tr><th>Bill number</th><th>Date</th><th>Category</th><th>Remarks</th><th>Amount</th></tr></thead>
         <tbody>${filtered.map((expense) => `
           <tr>
+            <td>${escapeHTML(expense.billNumber || expense.id)}</td>
             <td>${formatDate(expense.date)}</td>
             <td>${escapeHTML(expense.categoryName || expense.remarks || "Expense")}</td>
             <td>${escapeHTML(expense.remarks || "—")}</td>
@@ -423,9 +522,9 @@ function renderSalesTable(sales) {
   }
   container.innerHTML = `
     <table class="sales-table">
-      <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Items</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
+      <thead><tr><th>Bill</th><th>Type</th><th>Date</th><th>Time</th><th>Items</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
       <tbody>${filtered.map((sale) => `
-        <tr><td>${escapeHTML(sale.id)}</td><td>${formatDate(sale.date)}</td><td>${formatTime(sale.time)}</td>
+        <tr><td>${escapeHTML(sale.id)}</td><td>${escapeHTML(sale.billType || (sale.manualAmount ? "Manual" : "99 Mall"))}</td><td>${formatDate(sale.date)}</td><td>${formatTime(sale.time)}</td>
         <td>${sale.quantity}</td><td>${sale.manualAmount ? escapeHTML(sale.remarks || "—") : "—"}</td>
         <td class="table-amount">${formatCurrency(sale.total)}</td>
         <td><button class="button button-danger delete-sale-button" type="button" data-delete-sale="${escapeHTML(sale.firestoreId)}" aria-label="Delete bill ${escapeHTML(sale.id)}">Delete</button></td></tr>
@@ -664,9 +763,10 @@ function renderExpenses() {
   }
   container.innerHTML = `
     <table class="sales-table expense-table">
-      <thead><tr><th>Date</th><th>Category</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
+      <thead><tr><th>Bill number</th><th>Date</th><th>Category</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
       <tbody>${filtered.map((expense) => `
         <tr>
+          <td>${escapeHTML(expense.billNumber || expense.id)}</td>
           <td>${formatDate(expense.date)}</td>
           <td>${escapeHTML(expense.category)}</td>
           <td>${expense.description ? escapeHTML(expense.description) : "—"}</td>
@@ -989,7 +1089,7 @@ function showPrintReceipt(sale) {
     $("#receipt-date-time").textContent = `${formatDate(sale.date)} · ${formatTime(sale.time)}`;
     $("#receipt-description").textContent = sale.manualAmount
       ? "Manual amount"
-      : `Everyday item × ${sale.quantity}`;
+      : `99 Mall item × ${sale.quantity}`;
     $("#receipt-remarks").textContent = sale.remarks || "";
     $("#receipt-remarks-row").classList.toggle("hidden", !sale.remarks);
     $("#receipt-total").textContent = formatCurrency(sale.total);
@@ -1232,6 +1332,13 @@ async function enterApp() {
     "",
     window.location.href,
   );
+  try {
+    await ensureBillNumberMigration();
+    clearDataLoadError("bill_counters");
+  } catch (error) {
+    console.error("Could not migrate bills to sequential numbering:", error);
+    setDataLoadError("bill_counters", error);
+  }
   await loadSales();
   await loadExpenses();
   await loadGoldmedalSales();
@@ -1525,16 +1632,11 @@ async function saveGoldmedalBill(event) {
     const now = new Date();
     const date = localDateKey(now);
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const billNumber = `GM-${now.getTime().toString().slice(-8)}`;
-    await addDoc(collection(db, "goldmedal_sales"), {
-      ownerId: SHARED_STORE_ID,
-      id: billNumber,
-      billNumber,
+    await saveNumberedRecord("goldmedal", {
       total: amount,
       date,
       time,
       remarks,
-      createdAt: serverTimestamp(),
     });
     $("#goldmedal-form").reset();
     await loadGoldmedalSales();
@@ -1572,17 +1674,13 @@ async function saveBillingGoldmedal() {
   button.disabled = true;
   try {
     const now = new Date();
-    await addDoc(collection(db, "goldmedal_sales"), {
-      ownerId: SHARED_STORE_ID,
-      id: `BILL-${now.getTime().toString().slice(-8)}`,
-      billNumber: `BILL-${now.getTime().toString().slice(-8)}`,
+    await saveNumberedRecord("goldmedal", {
       quantity: 1,
       unitPrice: amount,
       remarks,
       total: amount,
       date: localDateKey(now),
       time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-      createdAt: serverTimestamp(),
     });
     $("#billing-goldmedal-amount").value = "";
     $("#billing-goldmedal-remarks").value = "";
@@ -1622,13 +1720,11 @@ async function saveBillingExpense() {
 
   button.disabled = true;
   try {
-    await addDoc(collection(db, "expenses"), {
-      ownerId: SHARED_STORE_ID,
+    await saveNumberedRecord("expense", {
       amount,
       category,
       date: localDateKey(),
       description,
-      createdAt: serverTimestamp(),
     });
     $("#billing-expense-amount").value = "";
     $("#billing-expense-category").value = "";
@@ -1670,13 +1766,11 @@ async function saveExpense(event) {
 
   button.disabled = true;
   try {
-    await addDoc(collection(db, "expenses"), {
-      ownerId: SHARED_STORE_ID,
+    await saveNumberedRecord("expense", {
       amount,
       category,
       date,
       description,
-      createdAt: serverTimestamp(),
     });
     $("#expense-form").reset();
     await loadExpenses();
@@ -1724,10 +1818,8 @@ async function createBill({
     const now = new Date();
     const date = localDateKey(now);
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const billNumber = `BILL-${now.getTime().toString().slice(-8)}`;
-    const sale = {
-      id: billNumber,
-      billNumber,
+    const type = manualAmount ? "manual" : "standard";
+    const sale = await saveNumberedRecord(type, {
       quantity,
       unitPrice: manualAmount ? total : PRICE_PER_ITEM,
       manualAmount,
@@ -1735,11 +1827,6 @@ async function createBill({
       total,
       date,
       time,
-    };
-    await addDoc(collection(db, "sales"), {
-      ownerId: SHARED_STORE_ID,
-      ...sale,
-      createdAt: serverTimestamp(),
     });
     showPrintReceipt(sale);
     await loadSales();

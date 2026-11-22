@@ -81,7 +81,12 @@
       </aside>
       <section class="workspace">
         <header class="topbar">
-          <div class="breadcrumb"><span>Workspace</span><span class="crumb-separator">/</span><strong id="page-breadcrumb">New bill</strong></div>
+          <div class="breadcrumb">
+            <button id="back-button" class="back-button" type="button" aria-label="Go back to previous page" disabled><span aria-hidden="true">←</span><span>Back</span></button>
+            <button class="workspace-link" type="button" data-page="billing">Workspace</button>
+            <span class="crumb-separator">/</span>
+            <strong id="page-breadcrumb">New bill</strong>
+          </div>
           <div class="topbar-right">
             <span id="header-date" class="header-date"></span>
             <button id="profile-avatar" class="profile-avatar" type="button" aria-label="Open account details" aria-haspopup="dialog" aria-controls="profile-dialog">S</button>
@@ -270,6 +275,7 @@
                     <label>Category
                       <select id="expense-category" name="category" required>
                         <option value="">Choose category</option>
+                        <option>Food</option>
                         <option>Rent</option>
                         <option>Utilities</option>
                         <option>Transport</option>
@@ -279,9 +285,8 @@
                         <option>Other</option>
                       </select>
                     </label>
-                    <label>Date<input id="expense-date" name="date" type="date" required /></label>
                   </div>
-                  <label>Description<textarea id="expense-description" name="description" rows="3" maxlength="300" placeholder="What was this expense for?"></textarea></label>
+                  <label>Remarks (optional)<textarea id="expense-description" name="description" rows="3" maxlength="300" placeholder="What was this expense for? (optional)"></textarea></label>
                   <button id="save-expense-button" class="button button-primary" type="submit">Save expense <span>→</span></button>
                   <p id="expense-message" class="expense-message" aria-live="polite"></p>
                 </form>
@@ -319,7 +324,7 @@
               <div class="panel-heading expense-list-heading">
                 <div><h2>Expense records</h2><p id="expense-list-subtitle">All recorded expenses</p></div>
                 <div class="expense-date-controls">
-                  <label class="bill-search-label" for="expense-search-input"><span>Search</span><input id="expense-search-input" type="search" placeholder="Category or description" autocomplete="off" /></label>
+                  <label class="bill-search-label" for="expense-search-input"><span>Search</span><input id="expense-search-input" type="search" placeholder="Category or remarks" autocomplete="off" /></label>
                   <label class="expense-date-filter"><span>Date</span><input id="expense-date-filter" type="date" /></label>
                   <button id="clear-expense-filter" class="date-shortcut" type="button">All</button>
                 </div>

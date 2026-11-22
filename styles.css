@@ -110,6 +110,12 @@ button { cursor: pointer; }
 .topbar { position: sticky; z-index: 1; top: 0; display: flex; height: 65px; align-items: center; justify-content: space-between; border-bottom: 1px solid #eeedf1; padding: 0 5.2%; background: #ffffffed; backdrop-filter: blur(10px); }
 .breadcrumb { display: flex; align-items: center; gap: 10px; color: #9a9aa4; font-size: 11px; }
 .breadcrumb strong { color: #42424b; font-weight: 600; }
+.back-button,.workspace-link { display: inline-flex; align-items: center; gap: 6px; border: 0; padding: 6px 8px; background: transparent; color: #64758c; font-size: 11px; font-weight: 600; transition: background .18s, color .18s, transform .18s; }
+.back-button { border: 1px solid #dce5ef; border-radius: 8px; background: #fff; color: #3e5878; }
+.back-button:hover:not(:disabled),.workspace-link:hover { background: #edf4fb; color: #315a8a; }
+.back-button:hover:not(:disabled) { transform: translateX(-2px); }
+.back-button:disabled { cursor: default; opacity: .48; }
+.back-button:focus-visible,.workspace-link:focus-visible { outline: 3px solid #6296d588; outline-offset: 2px; }
 .crumb-separator { color: #c9c8d0; }
 .topbar-right { display: flex; align-items: center; gap: 17px; }
 .header-date { color: #81818c; font-size: 10px; }
@@ -236,7 +242,7 @@ button { cursor: pointer; }
 .expense-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); align-items: stretch; gap: 17px; }
 .expense-form-panel { padding: 21px; }
 .expense-form { display: grid; gap: 15px; margin-top: 18px; }
-.expense-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.expense-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .expense-form label { display: grid; gap: 7px; color: #62626c; font-size: 12px; font-weight: 700; }
 .expense-form input,.expense-form select,.expense-form textarea { width: 100%; border: 1px solid #dfdbea; border-radius: 9px; outline: 0; background: #fff; color: #41414b; font-size: 12px; }
 .expense-form input,.expense-form select { height: 42px; padding: 0 11px; }
@@ -384,6 +390,8 @@ button { cursor: pointer; }
   .nav-shortcut { display: none; }
   .workspace { margin-left: 0; padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .topbar { height: 52px; padding: 0 16px; }
+  .breadcrumb { gap: 5px; }
+  .back-button,.workspace-link { gap: 4px; padding: 5px 6px; font-size: 10px; }
   .header-date { font-size: 9px; }
   .topbar-right { gap: 9px; }
   .logout-button { height: 36px; gap: 6px; border-radius: 9px; padding: 0 10px; font-size: 11px; }
@@ -664,6 +672,9 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
 .topbar { border-color: #e0e8f2; background: #f9fbfff0; box-shadow: 0 8px 28px #23405e0b; }
 .breadcrumb { color: #8594a8; }
 .breadcrumb strong { color: #263a53; }
+.back-button { border-color: #d7e2ee; background: linear-gradient(135deg, #fff, #f3f7fc); color: #3e5878; }
+.back-button:hover:not(:disabled),.workspace-link:hover { background: #eaf2fb; color: #315a8a; }
+.workspace-link { color: #5478a5; }
 .header-date { border-color: #dce6f2; background: linear-gradient(120deg, #fff, #f0f5fb); color: #526a87; }
 .profile-avatar { background: linear-gradient(145deg, #b9ddf2, #8b9cf0); color: #243f66; box-shadow: 0 0 0 1px #cbd9ed, 0 5px 14px #46638f20; }
 .logout-button { border-color: #d8e2ef; background: linear-gradient(135deg, #fff, #f6f9fd); color: #3e5878; box-shadow: 0 4px 12px #243d5b0d; }
@@ -784,6 +795,16 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
 }
 @media (prefers-reduced-motion: reduce) {
   .panel,.stat-card,.billing-report-stat,.sale-row { transition: none !important; }
+  .back-button,.workspace-link { transition: none; }
+}
+
+.page-section:not(.hidden) { animation: page-enter .24s ease-out both; }
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-section:not(.hidden) { animation: none; }
 }
 
 .dashboard-welcome {

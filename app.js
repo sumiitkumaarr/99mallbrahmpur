@@ -48,6 +48,7 @@ const forms = {
   reset: $("#reset-form"),
 };
 let currentPage = "billing";
+let pageHistoryIndex = 0;
 let account = null;
 let sales = [];
 let expenses = [];
@@ -459,7 +460,7 @@ function renderExpenses() {
   }
   container.innerHTML = `
     <table class="sales-table expense-table">
-      <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead>
+      <thead><tr><th>Date</th><th>Category</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
       <tbody>${filtered.map((expense) => `
         <tr>
           <td>${formatDate(expense.date)}</td>
@@ -895,7 +896,15 @@ function refreshDateReport() {
     renderDailySalesChart(sortedSales);
 }
 
-function setPage(page) {
+function setPage(page, { updateHistory = true } = {}) {
+  if (updateHistory && page !== currentPage) {
+    pageHistoryIndex += 1;
+    window.history.pushState(
+      { ...(window.history.state || {}), appPage: page, appHistoryIndex: pageHistoryIndex },
+      "",
+      window.location.href,
+    );
+  }
   currentPage = page;
   if (page === "billing") {
     $("#item-quantity").value = "1";
@@ -926,10 +935,14 @@ function setPage(page) {
       : page === "expenses" ? "Misc. expenses"
         : page === "goldmedal" ? "Goldmedal"
           : page === "billing" ? "New bill" : "Overview";
+  $("#back-button").disabled = pageHistoryIndex === 0;
   updateDashboard();
   renderExpenses();
   renderGoldmedalSales();
-  window.scrollTo(0, 0);
+  window.scrollTo({
+    top: 0,
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+  });
 }
 
 async function enterApp() {
@@ -952,11 +965,26 @@ async function enterApp() {
   $("#header-date").textContent = new Date().toLocaleDateString("en-IN", {
     weekday: "short", day: "numeric", month: "short",
   });
+  pageHistoryIndex = 0;
+  window.history.replaceState(
+    { ...(window.history.state || {}), appPage: currentPage, appHistoryIndex: pageHistoryIndex },
+    "",
+    window.location.href,
+  );
   await loadSales();
   await loadExpenses();
   await loadGoldmedalSales();
-  setPage(currentPage);
+  setPage(currentPage, { updateHistory: false });
 }
+
+window.addEventListener("popstate", (event) => {
+  const { appPage, appHistoryIndex } = event.state || {};
+  if (!["billing", "sales", "expenses", "goldmedal"].includes(appPage)) return;
+  pageHistoryIndex = Number.isInteger(appHistoryIndex) ? appHistoryIndex : 0;
+  if (!appScreen.classList.contains("hidden")) {
+    setPage(appPage, { updateHistory: false });
+  }
+});
 
 function showFormError(form, message) {
   form.querySelector(".form-error").classList.remove("success");
@@ -1196,7 +1224,7 @@ async function saveExpense(event) {
   event.preventDefault();
   const amount = Number($("#expense-amount").value);
   const category = $("#expense-category").value;
-  const date = $("#expense-date").value;
+  const date = localDateKey();
   const description = $("#expense-description").value.trim();
   const button = $("#save-expense-button");
   const message = $("#expense-message");
@@ -1208,8 +1236,8 @@ async function saveExpense(event) {
     message.classList.add("error");
     return;
   }
-  if (!category || !date) {
-    message.textContent = "Choose a category and date.";
+  if (!category) {
+    message.textContent = "Choose a category.";
     message.classList.add("error");
     return;
   }
@@ -1225,7 +1253,6 @@ async function saveExpense(event) {
       createdAt: serverTimestamp(),
     });
     $("#expense-form").reset();
-    $("#expense-date").value = localDateKey();
     await loadExpenses();
     renderExpenses();
     message.textContent = `Expense saved for ${formatCurrency(amount)}.`;
@@ -1343,6 +1370,10 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.page) {
     setPage(target.dataset.page);
   }
+});
+
+$("#back-button").addEventListener("click", () => {
+  if (pageHistoryIndex > 0) window.history.back();
 });
 
 forms.setup.addEventListener("submit", handleSetup);
@@ -1493,7 +1524,6 @@ $("#clear-expense-filter").addEventListener("click", () => {
   $("#expense-search-input").value = "";
   renderExpenses();
 });
-$("#expense-date").value = localDateKey();
 let chartResizeFrame = 0;
 window.addEventListener("resize", () => {
   window.cancelAnimationFrame(chartResizeFrame);

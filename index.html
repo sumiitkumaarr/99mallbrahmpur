@@ -207,11 +207,9 @@
           <section id="sales-page" class="page-section hidden">
             <div class="page-heading heading-row"><div><span class="eyebrow">KNOW YOUR NUMBERS</span><h1>Sales &amp; reports<span class="heading-period">.</span></h1><p>Your saved sales, with date and time for every bill.</p></div>
               <div class="report-heading-actions">
-                <button id="clear-sales-button" class="button button-danger" type="button">Clear sales data</button>
                 <button class="button button-primary" type="button" data-go="billing"><span>＋</span> Create new bill</button>
               </div>
             </div>
-            <p id="clear-sales-message" class="clear-sales-message" aria-live="polite"></p>
             <p id="delete-bill-message" class="clear-sales-message" aria-live="polite"></p>
             <div class="stats-grid report-stats">
               <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="report-today">₹0</strong><div class="stat-foot"><span id="report-today-count">0 bills</span></div></article>
@@ -386,17 +384,6 @@
         </form>
       </div>
     </dialog>
-    <dialog id="clear-sales-dialog" class="confirmation-dialog" aria-labelledby="clear-sales-dialog-title" aria-describedby="clear-sales-dialog-message">
-      <div class="confirmation-dialog-content">
-        <span class="eyebrow">CONFIRM DELETE</span>
-        <h2 id="clear-sales-dialog-title">Clear all sales data?</h2>
-        <p id="clear-sales-dialog-message"></p>
-        <form method="dialog" class="confirmation-dialog-actions">
-          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep data</button>
-          <button class="button button-danger" type="submit" value="confirm">Yes, delete sales</button>
-        </form>
-      </div>
-    </dialog>
     <dialog id="delete-bill-dialog" class="confirmation-dialog" aria-labelledby="delete-bill-dialog-title" aria-describedby="delete-bill-dialog-message">
       <div class="confirmation-dialog-content">
         <span class="eyebrow">CONFIRM DELETE</span>
@@ -405,6 +392,22 @@
         <form method="dialog" class="confirmation-dialog-actions">
           <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep bill</button>
           <button class="button button-danger" type="submit" value="confirm">Yes, delete bill</button>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="delete-password-dialog" class="confirmation-dialog" aria-labelledby="delete-password-title" aria-describedby="delete-password-description">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">PASSWORD REQUIRED</span>
+        <h2 id="delete-password-title">Confirm deletion</h2>
+        <p id="delete-password-description">Enter the deletion password to continue.</p>
+        <form id="delete-password-form" class="delete-password-form">
+          <label for="delete-password-input">Password</label>
+          <input id="delete-password-input" type="password" autocomplete="off" autofocus />
+          <p id="delete-password-error" class="form-error" aria-live="polite"></p>
+          <div class="confirmation-dialog-actions">
+            <button id="delete-password-cancel" class="button button-secondary" type="button">Cancel</button>
+            <button class="button button-danger" type="submit">Continue</button>
+          </div>
         </form>
       </div>
     </dialog>

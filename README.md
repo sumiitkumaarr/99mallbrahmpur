@@ -22,8 +22,7 @@ The app connects directly to Firebase from the browser.
 - Standard bills are validated at ₹99 per item, while manual bills can use any positive whole-rupee amount.
 - Manual bills require a reason (up to 300 characters); remarks are saved with the bill and shown in the sales table and printed receipt.
 - Goldmedal bills use the `goldmedal_sales` collection; their date and time are recorded automatically when saved, and remarks are required.
-- Either allowed account can permanently delete an individual bill from the Sales & reports page; totals and reports update after deletion.
-- Either allowed account can clear all sales from the Sales & reports page; login accounts are preserved.
+- Deleting an individual bill or clearing all 99 Mall sales requires confirming the action and entering the deletion password. This browser-side password prompt is an extra safeguard, not a replacement for Firebase account security.
 - Only the two allowlisted emails can access store data; sales and expense updates are restricted to the legacy-owner migration, and Goldmedal bills are immutable after creation.
 - Changes to `firestore.rules` take effect only after publishing them to the `mallbrahmpur` Firebase project.
 

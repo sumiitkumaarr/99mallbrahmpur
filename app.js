@@ -21,6 +21,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const PRICE_PER_ITEM = 99;
+const DELETE_PASSWORD = "12345";
 const SHARED_STORE_ID = "99mallbrahmpur";
 const ALLOWED_EMAILS = new Set([
   "sumiitkumar.it@gmail.com",
@@ -800,20 +801,6 @@ function renderGoldmedalReports() {
   }, true);
 }
 
-function confirmSalesDeletion() {
-    const dialog = $("#clear-sales-dialog");
-    $("#clear-sales-dialog-message").textContent =
-      "Are you sure you want to permanently delete all saved bills and sales reports? Your login account will not be deleted.";
-    dialog.returnValue = "";
-
-    return new Promise((resolve) => {
-      dialog.addEventListener("close", () => {
-        resolve(dialog.returnValue === "confirm");
-      }, { once: true });
-      dialog.showModal();
-    });
-}
-
 function confirmBillDeletion(sale) {
   const dialog = $("#delete-bill-dialog");
   $("#delete-bill-dialog-message").textContent =
@@ -823,6 +810,34 @@ function confirmBillDeletion(sale) {
   return new Promise((resolve) => {
     dialog.addEventListener("close", () => {
       resolve(dialog.returnValue === "confirm");
+    }, { once: true });
+    dialog.showModal();
+  });
+}
+
+function confirmDeletePassword() {
+  const dialog = $("#delete-password-dialog");
+  const form = $("#delete-password-form");
+  const input = $("#delete-password-input");
+  const error = $("#delete-password-error");
+  form.reset();
+  error.textContent = "";
+  dialog.returnValue = "";
+
+  return new Promise((resolve) => {
+    const handleSubmit = (event) => {
+      event.preventDefault();
+      if (input.value !== DELETE_PASSWORD) {
+        error.textContent = "Incorrect password. Please try again.";
+        input.focus();
+        return;
+      }
+      dialog.close("verified");
+    };
+    form.addEventListener("submit", handleSubmit);
+    dialog.addEventListener("close", () => {
+      form.removeEventListener("submit", handleSubmit);
+      resolve(dialog.returnValue === "verified");
     }, { once: true });
     dialog.showModal();
   });
@@ -851,6 +866,7 @@ async function deleteSale(sale, button) {
   try {
     const confirmed = await confirmBillDeletion(sale);
     if (!confirmed) return;
+    if (!await confirmDeletePassword()) return;
 
     await deleteDoc(doc(db, "sales", sale.firestoreId));
     sales = sales.filter((item) => item.firestoreId !== sale.firestoreId);
@@ -863,93 +879,55 @@ async function deleteSale(sale, button) {
   } finally {
     button.disabled = false;
   }
+}
 
-  async function deleteExpense(expense, button) {
-    const confirmed = await confirmExpenseDeletion(expense);
-    if (!confirmed) return;
-    button.disabled = true;
-    try {
-      await deleteDoc(doc(db, "expenses", expense.firestoreId));
-      expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
-      renderExpenses();
-    } catch (error) {
-      console.error("Could not delete expense:", error);
-      $("#expense-message").textContent = firestoreActionError("Could not delete expense", error);
-      $("#expense-message").classList.add("error");
-    } finally {
-      button.disabled = false;
-    }
-  }
-
-  function confirmGoldmedalDeletion(sale) {
-    const dialog = $("#delete-goldmedal-dialog");
-    $("#delete-goldmedal-dialog-message").textContent =
-      `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}?`;
-    dialog.returnValue = "";
-    return new Promise((resolve) => {
-      dialog.addEventListener("close", () => {
-        resolve(dialog.returnValue === "confirm");
-      }, { once: true });
-      dialog.showModal();
-    });
-  }
-
-  async function deleteGoldmedalSale(sale, button) {
-    const confirmed = await confirmGoldmedalDeletion(sale);
-    if (!confirmed) return;
-    button.disabled = true;
-    try {
-      await deleteDoc(doc(db, "goldmedal_sales", sale.firestoreId));
-      goldmedalSales = goldmedalSales.filter((item) => item.firestoreId !== sale.firestoreId);
-      renderGoldmedalSales();
-      renderGoldmedalReports();
-    } catch (error) {
-      console.error("Could not delete Goldmedal bill:", error);
-      $("#goldmedal-message").textContent = firestoreActionError("Could not delete bill", error);
-      $("#goldmedal-message").classList.add("error");
-    } finally {
-      button.disabled = false;
-    }
+async function deleteExpense(expense, button) {
+  const confirmed = await confirmExpenseDeletion(expense);
+  if (!confirmed) return;
+  button.disabled = true;
+  try {
+    await deleteDoc(doc(db, "expenses", expense.firestoreId));
+    expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
+    renderExpenses();
+  } catch (error) {
+    console.error("Could not delete expense:", error);
+    $("#expense-message").textContent = firestoreActionError("Could not delete expense", error);
+    $("#expense-message").classList.add("error");
+  } finally {
+    button.disabled = false;
   }
 }
 
-async function clearSalesData() {
-    const button = $("#clear-sales-button");
-    const status = $("#clear-sales-message");
-    button.disabled = true;
-    status.textContent = "";
-    status.classList.remove("success");
+function confirmGoldmedalDeletion(sale) {
+  const dialog = $("#delete-goldmedal-dialog");
+  $("#delete-goldmedal-dialog-message").textContent =
+    `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}?`;
+  dialog.returnValue = "";
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "confirm");
+    }, { once: true });
+    dialog.showModal();
+  });
+}
 
-    try {
-      const confirmed = await confirmSalesDeletion();
-      if (!confirmed) return;
-
-      const snapshot = await getDocs(collection(db, "sales"));
-      if (snapshot.empty) {
-        status.textContent = "There are no sales to clear.";
-        return;
-      }
-
-      let deletedCount = 0;
-      for (let start = 0; start < snapshot.docs.length; start += 500) {
-        const batch = writeBatch(db);
-        snapshot.docs.slice(start, start + 500).forEach((saleDoc) => batch.delete(saleDoc.ref));
-        await batch.commit();
-        deletedCount += Math.min(500, snapshot.docs.length - start);
-      }
-
-      sales = [];
-      $("#sales-date-filter").value = "";
-      $("#bill-search-input").value = "";
-      updateDashboard();
-      status.textContent = `${deletedCount} bills and reports deleted.`;
-      status.classList.add("success");
-    } catch (error) {
-      console.error("Could not clear sales data:", error);
-      status.textContent = firestoreActionError("Could not clear all sales data", error);
-    } finally {
-      button.disabled = false;
-    }
+async function deleteGoldmedalSale(sale, button) {
+  const confirmed = await confirmGoldmedalDeletion(sale);
+  if (!confirmed) return;
+  if (!await confirmDeletePassword()) return;
+  button.disabled = true;
+  try {
+    await deleteDoc(doc(db, "goldmedal_sales", sale.firestoreId));
+    goldmedalSales = goldmedalSales.filter((item) => item.firestoreId !== sale.firestoreId);
+    renderGoldmedalSales();
+    renderGoldmedalReports();
+  } catch (error) {
+    console.error("Could not delete Goldmedal bill:", error);
+    $("#goldmedal-message").textContent = firestoreActionError("Could not delete bill", error);
+    $("#goldmedal-message").classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function showPrintReceipt(sale) {
@@ -1727,7 +1705,9 @@ $("#print-bill-button").addEventListener("click", () => {
 $("#sales-date-filter").addEventListener("input", refreshDateReport);
 $("#bill-search-input").addEventListener("input", refreshDateReport);
 $("#sales-category-filter").addEventListener("change", refreshDateReport);
-$("#clear-sales-button").addEventListener("click", clearSalesData);
+$("#delete-password-cancel").addEventListener("click", () => {
+  $("#delete-password-dialog").close("cancel");
+});
 $("#daily-report-day-select").addEventListener("change", (event) => {
   $("#sales-date-filter").value = event.currentTarget.value;
   refreshDateReport();

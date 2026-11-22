@@ -29,7 +29,7 @@ The app connects directly to Firebase from the browser.
 ## Build and deploy
 
 - Build the static site with `npm run build`; the deployable files are written to `dist/`.
-- Netlify builds and publishes the site automatically from `main` using `netlify.toml` (build command `npm run build`, publish directory `dist`). Add the Netlify domain (e.g. `99mallbrahmpur.netlify.app`) to Firebase Authentication's authorized domains so sign-in works there.
+- Vercel builds and publishes the site using `vercel.json` (build command `npm run build`, output directory `dist`). Add the exact Vercel deployment hostname (for example, `your-project.vercel.app`) to Firebase Authentication's authorized domains so sign-in works there.
 - Push to `main` to build and deploy the site to GitHub Pages.
 - Push a version tag such as `v1.0.0` to deploy that version and create a GitHub Release with generated notes.
 - In the repository's **Settings → Pages**, set the source to **GitHub Actions**.

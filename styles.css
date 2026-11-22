@@ -1222,3 +1222,26 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
   margin-top: 0;
   align-items: start;
 }
+
+#billing-page .billing-report-heading .text-button {
+  display: inline-flex;
+  min-width: 138px;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid #bfd0e4;
+  border-radius: 12px;
+  padding: 0 15px;
+  background: linear-gradient(135deg, #f8fbff, #edf4fb);
+  color: #365e8e;
+  box-shadow: 0 7px 16px #29496714, inset 0 1px #fff;
+  font-size: 13px;
+  transition: transform .18s, border-color .18s, background .18s, box-shadow .18s;
+}
+#billing-page .billing-report-heading .text-button:hover {
+  transform: translateY(-2px);
+  border-color: #91aecb;
+  background: linear-gradient(135deg, #edf6fc, #e8eff9);
+  box-shadow: 0 10px 20px #2949671c, inset 0 1px #fff;
+}

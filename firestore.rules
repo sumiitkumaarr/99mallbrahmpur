@@ -56,5 +56,39 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerId']);
       allow delete: if isAllowedEmail();
     }
+
+    match /expenses/{expenseId} {
+      allow read: if isAllowedEmail();
+      allow create: if isAllowedEmail()
+        && request.resource.data.ownerId == sharedStoreId()
+        && request.resource.data.amount is int
+        && request.resource.data.amount > 0
+        && request.resource.data.category is string
+        && request.resource.data.category.size() > 0
+        && request.resource.data.category.size() <= 100
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300;
+      allow update: if isAllowedEmail()
+        && request.resource.data.ownerId == sharedStoreId();
+      allow delete: if isAllowedEmail();
+    }
+
+    match /goldmedal_sales/{saleId} {
+      allow read: if isAllowedEmail();
+      allow create: if isAllowedEmail()
+        && request.resource.data.ownerId == sharedStoreId()
+        && request.resource.data.total is int
+        && request.resource.data.total > 0
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.remarks is string
+        && request.resource.data.remarks.size() > 0
+        && request.resource.data.remarks.size() <= 300;
+      allow update: if isAllowedEmail()
+        && request.resource.data.ownerId == sharedStoreId();
+      allow delete: if isAllowedEmail();
+    }
   }
 }

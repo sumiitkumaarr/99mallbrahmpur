@@ -50,6 +50,8 @@ const forms = {
 let currentPage = "billing";
 let account = null;
 let sales = [];
+let expenses = [];
+let goldmedalSales = [];
 let billPendingSave = true;
 
 function isAllowedEmail(email) {
@@ -170,9 +172,17 @@ function salesSummary(sales) {
   };
 }
 
+function salesByCategory(sales) {
+  const category = $("#sales-category-filter")?.value || "all";
+  if (category === "standard") return sales.filter((sale) => sale.manualAmount !== true);
+  if (category === "manual") return sales.filter((sale) => sale.manualAmount === true);
+  return sales;
+}
+
 function updateDashboard() {
   const sortedSales = [...sales].sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
-  const summary = salesSummary(sortedSales);
+  const reportSales = salesByCategory(sortedSales);
+  const summary = salesSummary(reportSales);
   $("#report-today").textContent = formatCurrency(summary.todayTotal);
   $("#report-today-count").textContent = `${summary.todaySales.length} ${summary.todaySales.length === 1 ? "bill" : "bills"}`;
   $("#report-yesterday").textContent = formatCurrency(summary.yesterdayTotal);
@@ -199,7 +209,8 @@ function renderSalesTable(sales) {
   const filter = $("#sales-date-filter").value;
   const rawSearch = $("#bill-search-input").value.trim();
   const search = rawSearch.toLowerCase().replace(/[₹,\s]/g, "");
-  let filtered = filter ? sales.filter((sale) => sale.date === filter) : sales;
+  let filtered = salesByCategory(sales);
+  if (filter) filtered = filtered.filter((sale) => sale.date === filter);
   if (search) {
     filtered = filtered.filter((sale) => {
       const searchableValues = [
@@ -216,6 +227,9 @@ function renderSalesTable(sales) {
     });
   }
   const filterParts = [];
+  const category = $("#sales-category-filter").value;
+  if (category === "standard") filterParts.push("for 99 Mall bills");
+  if (category === "manual") filterParts.push("for manual bills");
   if (filter) filterParts.push(`for ${formatDate(filter)}`);
   if (rawSearch) filterParts.push(`matching "${rawSearch}"`);
   $("#sales-subtitle").textContent = filterParts.length
@@ -242,12 +256,13 @@ function renderSalesTable(sales) {
 
 function renderDailyReport(sales) {
     const date = $("#sales-date-filter").value;
+    const reportSales = salesByCategory(sales);
     const label = $("#daily-report-date");
     const daySelect = $("#daily-report-day-select");
-    const dates = [...new Set([...sales.map((sale) => sale.date), date].filter(Boolean))].sort().reverse();
+    const dates = [...new Set([...reportSales.map((sale) => sale.date), date].filter(Boolean))].sort().reverse();
     daySelect.replaceChildren(new Option("Choose a day with sales", ""));
     dates.forEach((day) => {
-      const daySales = sales.filter((sale) => sale.date === day);
+      const daySales = reportSales.filter((sale) => sale.date === day);
       const total = daySales.reduce((sum, sale) => sum + sale.total, 0);
       daySelect.add(new Option(
         `${formatDate(day)} — ${formatCurrency(total)}, ${daySales.length} bills`,
@@ -264,7 +279,7 @@ function renderDailyReport(sales) {
       return;
     }
 
-    const daySales = sales.filter((sale) => sale.date === date);
+    const daySales = reportSales.filter((sale) => sale.date === date);
     label.textContent = `Daily report for ${formatDate(date)}`;
     $("#daily-report-total").textContent = formatCurrency(
       daySales.reduce((total, sale) => total + sale.total, 0),
@@ -277,6 +292,7 @@ function renderDailyReport(sales) {
 
 function renderDailySalesChart(sales) {
     const selectedDate = $("#sales-date-filter").value;
+    const reportSales = salesByCategory(sales);
     const endDate = selectedDate
       ? new Date(`${selectedDate}T00:00:00`)
       : new Date();
@@ -286,7 +302,7 @@ function renderDailySalesChart(sales) {
       const date = new Date(endDate);
       date.setDate(date.getDate() - offset);
       const key = localDateKey(date);
-      const daySales = sales.filter((sale) => sale.date === key);
+      const daySales = reportSales.filter((sale) => sale.date === key);
       days.push({
         key,
         date,
@@ -402,6 +418,220 @@ function renderDailySalesChart(sales) {
     }, true);
 }
 
+function renderExpenses() {
+  const today = localDateKey();
+  const monthPrefix = today.slice(0, 7);
+  const todayExpenses = expenses.filter((expense) => expense.date === today);
+  const monthExpenses = expenses.filter((expense) => expense.date?.startsWith(monthPrefix));
+  const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const todayTotal = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const monthTotal = monthExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+  $("#expense-today").textContent = formatCurrency(todayTotal);
+  $("#expense-today-count").textContent = `${todayExpenses.length} ${todayExpenses.length === 1 ? "expense" : "expenses"}`;
+  $("#expense-month").textContent = formatCurrency(monthTotal);
+  $("#expense-month-count").textContent = `${monthExpenses.length} ${monthExpenses.length === 1 ? "expense" : "expenses"}`;
+  $("#expense-total").textContent = formatCurrency(total);
+  $("#expense-total-count").textContent = `${expenses.length} ${expenses.length === 1 ? "expense" : "expenses"}`;
+
+  const dateFilter = $("#expense-date-filter").value;
+  const search = $("#expense-search-input").value.trim().toLowerCase();
+  let filtered = dateFilter ? expenses.filter((expense) => expense.date === dateFilter) : expenses;
+  if (search) {
+    filtered = filtered.filter((expense) =>
+      `${expense.category} ${expense.description} ${expense.amount}`
+        .toLowerCase()
+        .includes(search),
+    );
+  }
+
+  const filterParts = [];
+  if (dateFilter) filterParts.push(`for ${formatDate(dateFilter)}`);
+  if (search) filterParts.push(`matching "${$("#expense-search-input").value.trim()}"`);
+  $("#expense-list-subtitle").textContent = filterParts.length
+    ? `Showing ${filtered.length} ${filtered.length === 1 ? "expense" : "expenses"} ${filterParts.join(" ")}`
+    : `${expenses.length} ${expenses.length === 1 ? "expense" : "expenses"} recorded`;
+
+  const container = $("#expenses-table-wrap");
+  if (!filtered.length) {
+    container.innerHTML = '<div class="sales-empty">No miscellaneous expenses found.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <table class="sales-table expense-table">
+      <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead>
+      <tbody>${filtered.map((expense) => `
+        <tr>
+          <td>${formatDate(expense.date)}</td>
+          <td>${escapeHTML(expense.category)}</td>
+          <td>${expense.description ? escapeHTML(expense.description) : "—"}</td>
+          <td class="table-amount">${formatCurrency(expense.amount)}</td>
+          <td><button class="button button-danger delete-expense-button" type="button" data-delete-expense="${escapeHTML(expense.firestoreId)}" aria-label="Delete ${escapeHTML(expense.category)} expense">Delete</button></td>
+        </tr>
+      `).join("")}</tbody>
+    </table>`;
+}
+
+function renderGoldmedalSales() {
+  const today = localDateKey();
+  const monthPrefix = today.slice(0, 7);
+  const todaySales = goldmedalSales.filter((sale) => sale.date === today);
+  const monthSales = goldmedalSales.filter((sale) => sale.date?.startsWith(monthPrefix));
+  const todayTotal = todaySales.reduce((sum, sale) => sum + sale.total, 0);
+  const monthTotal = monthSales.reduce((sum, sale) => sum + sale.total, 0);
+  const total = goldmedalSales.reduce((sum, sale) => sum + sale.total, 0);
+
+  $("#goldmedal-today").textContent = formatCurrency(todayTotal);
+  $("#goldmedal-today-count").textContent = `${todaySales.length} ${todaySales.length === 1 ? "bill" : "bills"}`;
+  $("#goldmedal-month").textContent = formatCurrency(monthTotal);
+  $("#goldmedal-month-count").textContent = `${monthSales.length} ${monthSales.length === 1 ? "bill" : "bills"}`;
+  $("#goldmedal-total").textContent = formatCurrency(total);
+  $("#goldmedal-total-count").textContent = `${goldmedalSales.length} ${goldmedalSales.length === 1 ? "bill" : "bills"}`;
+
+  const dateFilter = $("#goldmedal-date-filter").value;
+  const search = $("#goldmedal-search-input").value.trim().toLowerCase();
+  let filtered = dateFilter
+    ? goldmedalSales.filter((sale) => sale.date === dateFilter)
+    : goldmedalSales;
+  if (search) {
+    filtered = filtered.filter((sale) =>
+      `${sale.id} ${sale.remarks} ${sale.total}`.toLowerCase().includes(search),
+    );
+  }
+
+  const filterParts = [];
+  if (dateFilter) filterParts.push(`for ${formatDate(dateFilter)}`);
+  if (search) filterParts.push(`matching "${$("#goldmedal-search-input").value.trim()}"`);
+  $("#goldmedal-list-subtitle").textContent = filterParts.length
+    ? `Showing ${filtered.length} ${filtered.length === 1 ? "bill" : "bills"} ${filterParts.join(" ")}`
+    : `${goldmedalSales.length} ${goldmedalSales.length === 1 ? "bill" : "bills"} recorded`;
+
+  const container = $("#goldmedal-table-wrap");
+  if (!filtered.length) {
+    container.innerHTML = '<div class="sales-empty">No Goldmedal bills found.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <table class="sales-table expense-table">
+      <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
+      <tbody>${filtered.map((sale) => `
+        <tr>
+          <td>${escapeHTML(sale.id)}</td>
+          <td>${formatDate(sale.date)}</td>
+          <td>${formatTime(sale.time)}</td>
+          <td>${escapeHTML(sale.remarks || "—")}</td>
+          <td class="table-amount">${formatCurrency(sale.total)}</td>
+          <td><button class="button button-danger delete-goldmedal-button" type="button" data-delete-goldmedal="${escapeHTML(sale.firestoreId)}" aria-label="Delete Goldmedal bill ${escapeHTML(sale.id)}">Delete</button></td>
+        </tr>
+      `).join("")}</tbody>
+    </table>`;
+}
+
+function renderGoldmedalReports() {
+  const selectedDate = $("#goldmedal-daily-date").value;
+  const endDate = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
+  const daySales = goldmedalSales.filter((sale) => sale.date === selectedDate);
+  const dailyTotal = daySales.reduce((sum, sale) => sum + sale.total, 0);
+
+  if (!selectedDate) {
+    $("#goldmedal-daily-report-date").textContent = "Choose a date to view its report.";
+    $("#goldmedal-daily-total").textContent = "—";
+    $("#goldmedal-daily-bills").textContent = "—";
+  } else {
+    $("#goldmedal-daily-report-date").textContent = `Daily report for ${formatDate(selectedDate)}`;
+    $("#goldmedal-daily-total").textContent = formatCurrency(dailyTotal);
+    $("#goldmedal-daily-bills").textContent = String(daySales.length);
+  }
+
+  const days = [];
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const date = new Date(endDate);
+    date.setDate(date.getDate() - offset);
+    const key = localDateKey(date);
+    const records = goldmedalSales.filter((sale) => sale.date === key);
+    days.push({
+      key,
+      date,
+      total: records.reduce((sum, sale) => sum + sale.total, 0),
+      bills: records.length,
+    });
+  }
+
+  $("#goldmedal-chart-period").textContent =
+    `Daily totals from ${formatDate(days[0].key)} to ${formatDate(days[days.length - 1].key)}`;
+  const chart = $("#goldmedal-sales-chart");
+  chart.setAttribute("aria-label", days.map((day) =>
+    `${formatDate(day.key)}: ${formatCurrency(day.total)}, ${day.bills} bills`,
+  ).join(". "));
+
+  if (!window.echarts) {
+    chart.innerHTML = '<div class="sales-empty">Sales chart could not be loaded. Please refresh the page.</div>';
+    return;
+  }
+
+  const shortCurrency = new Intl.NumberFormat("en-IN", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+  const instance = echarts.getInstanceByDom(chart) || echarts.init(chart, null, { renderer: "canvas" });
+  instance.setOption({
+    animationDuration: 650,
+    animationEasing: "cubicOut",
+    textStyle: { fontFamily: "DM Sans, sans-serif", color: "#798392" },
+    grid: { top: 46, right: 12, bottom: 48, left: 48 },
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      formatter(params) {
+        const day = days[params[0].dataIndex];
+        return `<b>${formatDate(day.key)}</b><br/>Goldmedal sales: ${formatCurrency(day.total)}<br/>${day.bills} ${day.bills === 1 ? "bill" : "bills"}`;
+      },
+    },
+    xAxis: {
+      type: "category",
+      data: days.map((day) => new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(day.date)),
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: "#e7ebf2" } },
+      axisLabel: {
+        margin: 12,
+        color: "#687080",
+        fontSize: 11,
+        formatter(value, index) {
+          const dateLabel = new Intl.DateTimeFormat("en-IN", {
+            day: "numeric",
+            month: "short",
+          }).format(days[index].date);
+          return `${value}\n${dateLabel}`;
+        },
+      },
+    },
+    yAxis: {
+      type: "value",
+      min: 0,
+      max: Math.max(1, ...days.map((day) => day.total)),
+      splitNumber: 4,
+      axisLabel: {
+        formatter(value) {
+          return value === 0 ? "₹0" : `₹${shortCurrency.format(value)}`;
+        },
+      },
+      splitLine: { lineStyle: { color: "#edf0f4", type: "dashed" } },
+    },
+    series: [{
+      name: "Goldmedal sales",
+      type: "bar",
+      barMaxWidth: 42,
+      data: days.map((day, index) => ({
+        value: day.total,
+        itemStyle: {
+          borderRadius: [8, 8, 3, 3],
+          color: index === days.length - 1 ? "#5274a8" : "#6688b3",
+        },
+      })),
+    }],
+  }, true);
+}
+
 function confirmSalesDeletion() {
     const dialog = $("#clear-sales-dialog");
     $("#clear-sales-dialog-message").textContent =
@@ -420,6 +650,20 @@ function confirmBillDeletion(sale) {
   const dialog = $("#delete-bill-dialog");
   $("#delete-bill-dialog-message").textContent =
     `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}? This will also update your sales reports.`;
+  dialog.returnValue = "";
+
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "confirm");
+    }, { once: true });
+    dialog.showModal();
+  });
+}
+
+function confirmExpenseDeletion(expense) {
+  const dialog = $("#delete-expense-dialog");
+  $("#delete-expense-dialog-message").textContent =
+    `Permanently delete the ${escapeHTML(expense.category)} expense for ${formatCurrency(expense.amount)}?`;
   dialog.returnValue = "";
 
   return new Promise((resolve) => {
@@ -450,6 +694,54 @@ async function deleteSale(sale, button) {
     status.textContent = `Could not delete ${sale.id}: ${error.message}`;
   } finally {
     button.disabled = false;
+  }
+
+  async function deleteExpense(expense, button) {
+    const confirmed = await confirmExpenseDeletion(expense);
+    if (!confirmed) return;
+    button.disabled = true;
+    try {
+      await deleteDoc(doc(db, "expenses", expense.firestoreId));
+      expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
+      renderExpenses();
+    } catch (error) {
+      console.error("Could not delete expense:", error);
+      $("#expense-message").textContent = `Could not delete expense: ${error.message}`;
+      $("#expense-message").classList.add("error");
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function confirmGoldmedalDeletion(sale) {
+    const dialog = $("#delete-goldmedal-dialog");
+    $("#delete-goldmedal-dialog-message").textContent =
+      `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}?`;
+    dialog.returnValue = "";
+    return new Promise((resolve) => {
+      dialog.addEventListener("close", () => {
+        resolve(dialog.returnValue === "confirm");
+      }, { once: true });
+      dialog.showModal();
+    });
+  }
+
+  async function deleteGoldmedalSale(sale, button) {
+    const confirmed = await confirmGoldmedalDeletion(sale);
+    if (!confirmed) return;
+    button.disabled = true;
+    try {
+      await deleteDoc(doc(db, "goldmedal_sales", sale.firestoreId));
+      goldmedalSales = goldmedalSales.filter((item) => item.firestoreId !== sale.firestoreId);
+      renderGoldmedalSales();
+      renderGoldmedalReports();
+    } catch (error) {
+      console.error("Could not delete Goldmedal bill:", error);
+      $("#goldmedal-message").textContent = `Could not delete bill: ${error.message}`;
+      $("#goldmedal-message").classList.add("error");
+    } finally {
+      button.disabled = false;
+    }
   }
 }
 
@@ -622,13 +914,24 @@ function setPage(page) {
     const bill = updateBillTotal();
     $("#print-bill-button").disabled = bill === null;
   }
+  if (page === "goldmedal") {
+    $("#goldmedal-date").value ||= localDateKey();
+    $("#goldmedal-daily-date").value ||= localDateKey();
+    renderGoldmedalReports();
+  }
   document.querySelectorAll(".page-section").forEach((section) => section.classList.add("hidden"));
   $(`#${page}-page`).classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.page === page);
   });
-  $("#page-breadcrumb").textContent = page === "sales" ? "Sales & reports" : page === "billing" ? "New bill" : "Overview";
+  $("#page-breadcrumb").textContent =
+    page === "sales" ? "Sales & reports"
+      : page === "expenses" ? "Misc. expenses"
+        : page === "goldmedal" ? "Goldmedal"
+          : page === "billing" ? "New bill" : "Overview";
   updateDashboard();
+  renderExpenses();
+  renderGoldmedalSales();
   window.scrollTo(0, 0);
 }
 
@@ -653,6 +956,8 @@ async function enterApp() {
     weekday: "short", day: "numeric", month: "short",
   });
   await loadSales();
+  await loadExpenses();
+  await loadGoldmedalSales();
   setPage(currentPage);
 }
 
@@ -779,6 +1084,146 @@ async function loadSales() {
   }
 }
 
+async function loadExpenses() {
+  try {
+    const snapshot = await getDocs(collection(db, "expenses"));
+    const legacyExpenses = snapshot.docs.filter(
+      (expenseDoc) => expenseDoc.data().ownerId !== SHARED_STORE_ID,
+    );
+    for (let start = 0; start < legacyExpenses.length; start += 500) {
+      const batch = writeBatch(db);
+      legacyExpenses.slice(start, start + 500).forEach((expenseDoc) => {
+        batch.update(expenseDoc.ref, { ownerId: SHARED_STORE_ID });
+      });
+      await batch.commit();
+    }
+    expenses = snapshot.docs.map((expenseDoc) => ({
+      ...expenseDoc.data(),
+      firestoreId: expenseDoc.id,
+    })).sort((a, b) => {
+      if (a.date !== b.date) return String(b.date).localeCompare(String(a.date));
+      return createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt);
+    });
+  } catch (error) {
+    console.error("Could not load expenses:", error);
+    expenses = [];
+  }
+}
+
+async function loadGoldmedalSales() {
+  try {
+    const snapshot = await getDocs(collection(db, "goldmedal_sales"));
+    goldmedalSales = snapshot.docs.map((saleDoc) => ({
+      ...saleDoc.data(),
+      firestoreId: saleDoc.id,
+      id: saleDoc.data().id || saleDoc.id,
+    })).sort((a, b) => {
+      if (a.date !== b.date) return String(b.date).localeCompare(String(a.date));
+      return createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt);
+    });
+  } catch (error) {
+    console.error("Could not load Goldmedal sales:", error);
+    goldmedalSales = [];
+  }
+}
+
+async function saveGoldmedalBill(event) {
+  event.preventDefault();
+  const amount = Number($("#goldmedal-amount").value);
+  const date = $("#goldmedal-date").value;
+  const remarks = $("#goldmedal-remarks").value.trim();
+  const button = $("#save-goldmedal-button");
+  const message = $("#goldmedal-message");
+  message.textContent = "";
+  message.classList.remove("error");
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    message.textContent = "Enter a whole bill amount greater than zero.";
+    message.classList.add("error");
+    return;
+  }
+  if (!date || !remarks) {
+    message.textContent = "Enter a date and remarks.";
+    message.classList.add("error");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const billNumber = `GM-${now.getTime().toString().slice(-8)}`;
+    await addDoc(collection(db, "goldmedal_sales"), {
+      ownerId: SHARED_STORE_ID,
+      id: billNumber,
+      billNumber,
+      total: amount,
+      date,
+      time,
+      remarks,
+      createdAt: serverTimestamp(),
+    });
+    $("#goldmedal-form").reset();
+    $("#goldmedal-date").value = localDateKey();
+    await loadGoldmedalSales();
+    renderGoldmedalSales();
+    renderGoldmedalReports();
+    message.textContent = `Goldmedal bill saved for ${formatCurrency(amount)}.`;
+  } catch (error) {
+    console.error("Could not save Goldmedal bill:", error);
+    message.textContent = `Could not save bill: ${error.message}`;
+    message.classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function saveExpense(event) {
+  event.preventDefault();
+  const amount = Number($("#expense-amount").value);
+  const category = $("#expense-category").value;
+  const date = $("#expense-date").value;
+  const description = $("#expense-description").value.trim();
+  const button = $("#save-expense-button");
+  const message = $("#expense-message");
+  message.textContent = "";
+  message.classList.remove("error");
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    message.textContent = "Enter a whole expense amount greater than zero.";
+    message.classList.add("error");
+    return;
+  }
+  if (!category || !date) {
+    message.textContent = "Choose a category and date.";
+    message.classList.add("error");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await addDoc(collection(db, "expenses"), {
+      ownerId: SHARED_STORE_ID,
+      amount,
+      category,
+      date,
+      description,
+      createdAt: serverTimestamp(),
+    });
+    $("#expense-form").reset();
+    $("#expense-date").value = localDateKey();
+    await loadExpenses();
+    renderExpenses();
+    message.textContent = `Expense saved for ${formatCurrency(amount)}.`;
+  } catch (error) {
+    console.error("Could not save expense:", error);
+    message.textContent = `Could not save expense: ${error.message}`;
+    message.classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function createBill({
   inputId,
   totalId,
@@ -853,9 +1298,15 @@ async function createBill({
 }
 
 document.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-auth-view], [data-go], [data-page], [data-sales-date], [data-delete-sale]");
+  const target = event.target.closest("[data-auth-view], [data-go], [data-page], [data-sales-date], [data-delete-sale], [data-delete-expense], [data-delete-goldmedal]");
   if (!target) return;
-  if (target.dataset.deleteSale) {
+  if (target.dataset.deleteGoldmedal) {
+    const sale = goldmedalSales.find((item) => item.firestoreId === target.dataset.deleteGoldmedal);
+    if (sale) deleteGoldmedalSale(sale, target);
+  } else if (target.dataset.deleteExpense) {
+    const expense = expenses.find((item) => item.firestoreId === target.dataset.deleteExpense);
+    if (expense) deleteExpense(expense, target);
+  } else if (target.dataset.deleteSale) {
     const sale = sales.find((item) => item.firestoreId === target.dataset.deleteSale);
     if (sale) deleteSale(sale, target);
   } else if (target.dataset.authView) {
@@ -915,6 +1366,9 @@ $("#logout-button").addEventListener("click", async (event) => {
     await signOut(auth);
     currentPage = "billing";
     sales = [];
+    expenses = [];
+    goldmedalSales = [];
+    goldmedalSales = [];
     account = null;
   } catch (error) {
     console.error("Could not sign out:", error);
@@ -995,11 +1449,42 @@ $("#print-bill-button").addEventListener("click", () => {
 });
 $("#sales-date-filter").addEventListener("input", refreshDateReport);
 $("#bill-search-input").addEventListener("input", refreshDateReport);
+$("#sales-category-filter").addEventListener("change", refreshDateReport);
 $("#clear-sales-button").addEventListener("click", clearSalesData);
 $("#daily-report-day-select").addEventListener("change", (event) => {
   $("#sales-date-filter").value = event.currentTarget.value;
   refreshDateReport();
 });
+$("#expense-form").addEventListener("submit", saveExpense);
+$("#expense-search-input").addEventListener("input", renderExpenses);
+$("#expense-date-filter").addEventListener("input", renderExpenses);
+$("#goldmedal-form").addEventListener("submit", saveGoldmedalBill);
+$("#goldmedal-search-input").addEventListener("input", renderGoldmedalSales);
+$("#goldmedal-date-filter").addEventListener("input", renderGoldmedalSales);
+$("#goldmedal-daily-date").addEventListener("input", renderGoldmedalReports);
+$("#clear-goldmedal-filter").addEventListener("click", () => {
+  $("#goldmedal-date-filter").value = "";
+  $("#goldmedal-search-input").value = "";
+  renderGoldmedalSales();
+});
+document.querySelectorAll("[data-goldmedal-date]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.dataset.goldmedalDate === "today") {
+      $("#goldmedal-daily-date").value = localDateKey();
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      $("#goldmedal-daily-date").value = localDateKey(yesterday);
+    }
+    renderGoldmedalReports();
+  });
+});
+$("#clear-expense-filter").addEventListener("click", () => {
+  $("#expense-date-filter").value = "";
+  $("#expense-search-input").value = "";
+  renderExpenses();
+});
+$("#expense-date").value = localDateKey();
 let chartResizeFrame = 0;
 window.addEventListener("resize", () => {
   window.cancelAnimationFrame(chartResizeFrame);
@@ -1007,6 +1492,8 @@ window.addEventListener("resize", () => {
     const chart = $("#daily-sales-chart");
     const instance = window.echarts?.getInstanceByDom(chart);
     instance?.resize();
+    const goldmedalChart = $("#goldmedal-sales-chart");
+    window.echarts?.getInstanceByDom(goldmedalChart)?.resize();
   });
 });
 document.addEventListener("keydown", (event) => {
@@ -1025,6 +1512,8 @@ onAuthStateChanged(auth, async (user) => {
       }
       account = null;
       sales = [];
+      expenses = [];
+      goldmedalSales = [];
       authScreen.classList.remove("hidden");
       appScreen.classList.add("hidden");
       showAuth("login");
@@ -1035,6 +1524,7 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     account = null;
     sales = [];
+    expenses = [];
     authScreen.classList.remove("hidden");
     appScreen.classList.add("hidden");
     showAuth("login");

@@ -72,6 +72,8 @@
         <nav class="main-nav" aria-label="Main navigation">
           <button class="nav-item active" type="button" data-page="billing" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
           <button class="nav-item" type="button" data-page="sales" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
+          <button class="nav-item" type="button" data-page="goldmedal" aria-label="Goldmedal Electrical"><span class="nav-icon" aria-hidden="true">G</span>Goldmedal</button>
+          <button class="nav-item" type="button" data-page="expenses" aria-label="Miscellaneous expenses"><span class="nav-icon" aria-hidden="true">₹</span>Misc. expenses</button>
         </nav>
         <div class="sidebar-bottom">
           <div class="help-card"><span class="help-spark">✳</span><strong>₹99 standard, manual option</strong><p>Quick quantity billing or enter another item's price.</p></div>
@@ -225,6 +227,14 @@
             <section class="panel sales-panel">
               <div class="panel-heading sales-heading"><div><h2>All bills</h2><p id="sales-subtitle">A complete record of your sales</p></div>
                 <div class="sales-date-controls">
+                  <label class="bill-search-label" for="sales-category-filter">
+                    <span>Report type</span>
+                    <select id="sales-category-filter">
+                      <option value="all">All reports</option>
+                      <option value="standard">99 Mall bills</option>
+                      <option value="manual">Manual bills</option>
+                    </select>
+                  </label>
                   <label class="bill-search-label" for="bill-search-input">
                     <span>Search bills</span>
                     <input id="bill-search-input" type="search" placeholder="Bill number or amount" autocomplete="off" />
@@ -233,6 +243,111 @@
                 </div>
               </div>
               <div id="sales-table-wrap" class="sales-table-wrap"></div>
+            </section>
+          </section>
+          <section id="expenses-page" class="page-section hidden">
+            <div class="page-heading heading-row">
+              <div><span class="eyebrow">TRACK YOUR OUTGOINGS</span><h1>Miscellaneous expenses<span class="heading-period">.</span></h1><p>Record store expenses separately from sales.</p></div>
+            </div>
+            <div class="expense-layout">
+              <section class="panel expense-form-panel">
+                <div class="panel-heading"><div><h2>Add expense</h2><p>Enter an outgoing for the store</p></div></div>
+                <form id="expense-form" class="expense-form">
+                  <div class="expense-form-grid">
+                    <label>Amount (₹)<input id="expense-amount" name="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="500" required /></label>
+                    <label>Category
+                      <select id="expense-category" name="category" required>
+                        <option value="">Choose category</option>
+                        <option>Rent</option>
+                        <option>Utilities</option>
+                        <option>Transport</option>
+                        <option>Supplies</option>
+                        <option>Maintenance</option>
+                        <option>Wages</option>
+                        <option>Other</option>
+                      </select>
+                    </label>
+                    <label>Date<input id="expense-date" name="date" type="date" required /></label>
+                  </div>
+                  <label>Description<textarea id="expense-description" name="description" rows="3" maxlength="300" placeholder="What was this expense for?"></textarea></label>
+                  <button id="save-expense-button" class="button button-primary" type="submit">Save expense <span>→</span></button>
+                  <p id="expense-message" class="expense-message" aria-live="polite"></p>
+                </form>
+              </section>
+              <section class="expense-summary">
+                <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="expense-today">₹0</strong><div class="stat-foot"><span id="expense-today-count">0 expenses</span></div></article>
+                <article class="stat-card"><div class="stat-top"><span>This month</span><span class="stat-icon icon-lilac">▦</span></div><strong id="expense-month">₹0</strong><div class="stat-foot"><span id="expense-month-count">0 expenses</span></div></article>
+                <article class="stat-card"><div class="stat-top"><span>Total</span><span class="stat-icon icon-mint">↗</span></div><strong id="expense-total">₹0</strong><div class="stat-foot"><span id="expense-total-count">0 expenses</span></div></article>
+              </section>
+            </div>
+            <section class="panel daily-report-panel goldmedal-daily-panel">
+              <div class="panel-heading daily-report-heading">
+                <div><h2>Goldmedal daily report</h2><p id="goldmedal-daily-report-date">Choose a date to view its report.</p></div>
+                <div class="daily-date-controls">
+                  <label class="filter-label">Calendar<input id="goldmedal-daily-date" type="date" /></label>
+                  <div class="daily-report-shortcuts">
+                    <button class="date-shortcut" type="button" data-goldmedal-date="today">Today</button>
+                    <button class="date-shortcut" type="button" data-goldmedal-date="yesterday">Yesterday</button>
+                  </div>
+                </div>
+              </div>
+              <div class="daily-report-stats">
+                <article><span>Total sales</span><strong id="goldmedal-daily-total">—</strong></article>
+                <article><span>Bills</span><strong id="goldmedal-daily-bills">—</strong></article>
+              </div>
+            </section>
+            <section class="panel sales-chart-panel goldmedal-chart-panel">
+              <div class="panel-heading sales-chart-heading">
+                <div><h2>Goldmedal sales trend</h2><p id="goldmedal-chart-period">Daily totals for the last 7 days</p></div>
+                <span class="chart-legend"><span></span>Sales</span>
+              </div>
+              <div id="goldmedal-sales-chart" class="daily-sales-chart" role="img" aria-label="Goldmedal daily sales bar chart"></div>
+            </section>
+            <section class="panel expense-list-panel">
+              <div class="panel-heading expense-list-heading">
+                <div><h2>Expense records</h2><p id="expense-list-subtitle">All recorded expenses</p></div>
+                <div class="expense-date-controls">
+                  <label class="bill-search-label" for="expense-search-input"><span>Search</span><input id="expense-search-input" type="search" placeholder="Category or description" autocomplete="off" /></label>
+                  <label class="expense-date-filter"><span>Date</span><input id="expense-date-filter" type="date" /></label>
+                  <button id="clear-expense-filter" class="date-shortcut" type="button">All</button>
+                </div>
+              </div>
+              <div id="expenses-table-wrap" class="sales-table-wrap"></div>
+            </section>
+          </section>
+          <section id="goldmedal-page" class="page-section hidden">
+            <div class="page-heading heading-row">
+              <div><span class="eyebrow">GOLDMEDAL ELECTRICAL</span><h1>Goldmedal billing<span class="heading-period">.</span></h1><p>Separate manual billing for Goldmedal Electrical.</p></div>
+            </div>
+            <div class="expense-layout">
+              <section class="panel expense-form-panel">
+                <div class="panel-heading"><div><h2>Add Goldmedal bill</h2><p>Enter the bill amount and remarks</p></div></div>
+                <form id="goldmedal-form" class="expense-form">
+                  <div class="expense-form-grid goldmedal-form-grid">
+                    <label>Amount (₹)<input id="goldmedal-amount" name="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="1500" required /></label>
+                    <label>Date<input id="goldmedal-date" name="date" type="date" required /></label>
+                  </div>
+                  <label>Remarks <span>(required)</span><textarea id="goldmedal-remarks" name="remarks" rows="3" maxlength="300" placeholder="Customer or item details" required></textarea></label>
+                  <button id="save-goldmedal-button" class="button button-primary" type="submit">Save bill <span>→</span></button>
+                  <p id="goldmedal-message" class="expense-message" aria-live="polite"></p>
+                </form>
+              </section>
+              <section class="expense-summary goldmedal-summary">
+                <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="goldmedal-today">₹0</strong><div class="stat-foot"><span id="goldmedal-today-count">0 bills</span></div></article>
+                <article class="stat-card"><div class="stat-top"><span>This month</span><span class="stat-icon icon-lilac">▦</span></div><strong id="goldmedal-month">₹0</strong><div class="stat-foot"><span id="goldmedal-month-count">0 bills</span></div></article>
+                <article class="stat-card"><div class="stat-top"><span>Total</span><span class="stat-icon icon-mint">↗</span></div><strong id="goldmedal-total">₹0</strong><div class="stat-foot"><span id="goldmedal-total-count">0 bills</span></div></article>
+              </section>
+            </div>
+            <section class="panel expense-list-panel">
+              <div class="panel-heading expense-list-heading">
+                <div><h2>Goldmedal bills</h2><p id="goldmedal-list-subtitle">All Goldmedal records</p></div>
+                <div class="expense-date-controls">
+                  <label class="bill-search-label" for="goldmedal-search-input"><span>Search</span><input id="goldmedal-search-input" type="search" placeholder="Bill number or remarks" autocomplete="off" /></label>
+                  <label class="expense-date-filter"><span>Date</span><input id="goldmedal-date-filter" type="date" /></label>
+                  <button id="clear-goldmedal-filter" class="date-shortcut" type="button">All</button>
+                </div>
+              </div>
+              <div id="goldmedal-table-wrap" class="sales-table-wrap"></div>
             </section>
           </section>
           <footer class="app-footer"><span>99<span class="footer-muted">mall</span> <span>·</span> Store billing, made simple</span><span>Standard item price <strong>₹99</strong></span></footer>
@@ -265,6 +380,28 @@
         <span class="eyebrow">CONFIRM DELETE</span>
         <h2 id="delete-bill-dialog-title">Delete this bill?</h2>
         <p id="delete-bill-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep bill</button>
+          <button class="button button-danger" type="submit" value="confirm">Yes, delete bill</button>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="delete-expense-dialog" class="confirmation-dialog" aria-labelledby="delete-expense-dialog-title" aria-describedby="delete-expense-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">CONFIRM DELETE</span>
+        <h2 id="delete-expense-dialog-title">Delete this expense?</h2>
+        <p id="delete-expense-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep expense</button>
+          <button class="button button-danger" type="submit" value="confirm">Yes, delete expense</button>
+        </form>
+      </div>
+    </dialog>
+    <dialog id="delete-goldmedal-dialog" class="confirmation-dialog" aria-labelledby="delete-goldmedal-dialog-title" aria-describedby="delete-goldmedal-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">CONFIRM DELETE</span>
+        <h2 id="delete-goldmedal-dialog-title">Delete this Goldmedal bill?</h2>
+        <p id="delete-goldmedal-dialog-message"></p>
         <form method="dialog" class="confirmation-dialog-actions">
           <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep bill</button>
           <button class="button button-danger" type="submit" value="confirm">Yes, delete bill</button>

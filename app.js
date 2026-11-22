@@ -1148,7 +1148,7 @@ function setPage(page, { updateHistory = true } = {}) {
       : page === "expenses" ? "Misc. expenses"
         : page === "goldmedal" ? "Goldmedal"
           : page === "billing" ? "New bill" : "Overview";
-  $("#back-button").disabled = pageHistoryIndex === 0;
+  $("#back-button").disabled = false;
   updateDashboard();
   renderExpenses();
   renderGoldmedalSales();
@@ -1803,7 +1803,19 @@ document.addEventListener("click", (event) => {
 });
 
 $("#back-button").addEventListener("click", () => {
-  if (pageHistoryIndex > 0) window.history.back();
+  if (pageHistoryIndex > 0) {
+    window.history.back();
+    return;
+  }
+  if (currentPage === "billing") {
+    setPage("sales");
+  } else if (currentPage === "sales") {
+    setPage("billing");
+  } else if (activeProject === "aimur-goldmedal" || currentPage === "goldmedal") {
+    setProject("99mall", "billing");
+  } else {
+    setPage("billing");
+  }
 });
 
 forms.setup.addEventListener("submit", handleSetup);

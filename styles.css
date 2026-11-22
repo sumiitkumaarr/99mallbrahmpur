@@ -1211,3 +1211,14 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
     min-height: 72px;
   }
 }
+
+#billing-page .dashboard-welcome {
+  display: none;
+}
+#billing-page {
+  padding-top: 2px;
+}
+#billing-page .billing-layout {
+  margin-top: 0;
+  align-items: start;
+}

@@ -17,7 +17,6 @@ import {
   serverTimestamp,
   setDoc,
   deleteDoc,
-  writeBatch,
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const PRICE_PER_ITEM = 99;
@@ -552,6 +551,13 @@ function renderDailySalesChart(sales) {
     }, true);
 }
 
+function setGoldmedalReportDate(date) {
+  $("#goldmedal-daily-date").value = date;
+  $("#goldmedal-date-filter").value = date;
+  renderGoldmedalReports();
+  renderGoldmedalSales();
+}
+
 function renderExpenses() {
   if (dataLoadErrors.has("expenses")) {
     ["#expense-today", "#expense-month", "#expense-total"].forEach((selector) => {
@@ -1069,7 +1075,9 @@ function setPage(page, { updateHistory = true } = {}) {
     $("#print-bill-button").disabled = bill === null;
   }
   if (page === "goldmedal") {
-    $("#goldmedal-daily-date").value ||= localDateKey();
+    const selectedDate = $("#goldmedal-daily-date").value || localDateKey();
+    $("#goldmedal-daily-date").value = selectedDate;
+    $("#goldmedal-date-filter").value = selectedDate;
   }
   document.querySelectorAll(".page-section").forEach((section) => section.classList.add("hidden"));
   $(`#${page}-page`).classList.remove("hidden");
@@ -1093,8 +1101,12 @@ function setPage(page, { updateHistory = true } = {}) {
   });
 }
 
-function setProject(project) {
-  if (!Object.hasOwn(PROJECTS, project) || project === activeProject) return;
+function setProject(project, page) {
+  if (!Object.hasOwn(PROJECTS, project)) return;
+  if (project === activeProject) {
+    if (page) setPage(page);
+    return;
+  }
   if (
     activeProject === "99mall"
     && currentPage === "billing"
@@ -1117,14 +1129,14 @@ function setProject(project) {
   window.history.pushState(
     {
       ...(window.history.state || {}),
-      appPage: PROJECTS[project].defaultPage,
+      appPage: page || PROJECTS[project].defaultPage,
       appProject: project,
       appHistoryIndex: pageHistoryIndex,
     },
     "",
     window.location.href,
   );
-  setPage(PROJECTS[project].defaultPage, { updateHistory: false });
+  setPage(page || PROJECTS[project].defaultPage, { updateHistory: false });
 }
 
 async function enterApp() {
@@ -1309,16 +1321,6 @@ function updateBillingModeUI() {
 async function loadSales() {
   try {
     const snapshot = await getDocs(collection(db, "sales"));
-    const legacySales = snapshot.docs.filter(
-      (saleDoc) => saleDoc.data().ownerId !== SHARED_STORE_ID,
-    );
-    for (let start = 0; start < legacySales.length; start += 500) {
-      const batch = writeBatch(db);
-      legacySales.slice(start, start + 500).forEach((saleDoc) => {
-        batch.update(saleDoc.ref, { ownerId: SHARED_STORE_ID });
-      });
-      await batch.commit();
-    }
     sales = snapshot.docs.map((saleDoc) => ({
       ...saleDoc.data(),
       firestoreId: saleDoc.id,
@@ -1335,16 +1337,6 @@ async function loadSales() {
 async function loadExpenses() {
   try {
     const snapshot = await getDocs(collection(db, "expenses"));
-    const legacyExpenses = snapshot.docs.filter(
-      (expenseDoc) => expenseDoc.data().ownerId !== SHARED_STORE_ID,
-    );
-    for (let start = 0; start < legacyExpenses.length; start += 500) {
-      const batch = writeBatch(db);
-      legacyExpenses.slice(start, start + 500).forEach((expenseDoc) => {
-        batch.update(expenseDoc.ref, { ownerId: SHARED_STORE_ID });
-      });
-      await batch.commit();
-    }
     expenses = snapshot.docs.map((expenseDoc) => ({
       ...expenseDoc.data(),
       firestoreId: expenseDoc.id,
@@ -1577,7 +1569,11 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.go) {
     setPage(target.dataset.go);
   } else if (target.dataset.page) {
-    setPage(target.dataset.page);
+    if (target.dataset.project) {
+      setProject(target.dataset.project, target.dataset.page);
+    } else {
+      setPage(target.dataset.page);
+    }
   }
 });
 
@@ -1699,7 +1695,7 @@ $("#print-bill-button").addEventListener("click", () => {
 });
 $("#sales-date-filter").addEventListener("input", refreshDateReport);
 $("#bill-search-input").addEventListener("input", refreshDateReport);
-$("#sales-category-filter").addEventListener("change", refreshDateReport);
+$("#sales-category-filter").addEventListener("change", updateDashboard);
 $("#delete-password-cancel").addEventListener("click", () => {
   $("#delete-password-dialog").close("cancel");
 });
@@ -1712,23 +1708,25 @@ $("#expense-search-input").addEventListener("input", renderExpenses);
 $("#expense-date-filter").addEventListener("input", renderExpenses);
 $("#goldmedal-form").addEventListener("submit", saveGoldmedalBill);
 $("#goldmedal-search-input").addEventListener("input", renderGoldmedalSales);
-$("#goldmedal-date-filter").addEventListener("input", renderGoldmedalSales);
-$("#goldmedal-daily-date").addEventListener("input", renderGoldmedalReports);
+$("#goldmedal-date-filter").addEventListener("input", (event) => {
+  setGoldmedalReportDate(event.currentTarget.value);
+});
+$("#goldmedal-daily-date").addEventListener("input", (event) => {
+  setGoldmedalReportDate(event.currentTarget.value);
+});
 $("#clear-goldmedal-filter").addEventListener("click", () => {
-  $("#goldmedal-date-filter").value = "";
   $("#goldmedal-search-input").value = "";
-  renderGoldmedalSales();
+  setGoldmedalReportDate("");
 });
 document.querySelectorAll("[data-goldmedal-date]").forEach((button) => {
   button.addEventListener("click", () => {
     if (button.dataset.goldmedalDate === "today") {
-      $("#goldmedal-daily-date").value = localDateKey();
+      setGoldmedalReportDate(localDateKey());
     } else {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      $("#goldmedal-daily-date").value = localDateKey(yesterday);
+      setGoldmedalReportDate(localDateKey(yesterday));
     }
-    renderGoldmedalReports();
   });
 });
 $("#clear-expense-filter").addEventListener("click", () => {

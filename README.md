@@ -17,13 +17,13 @@ The app connects directly to Firebase from the browser.
 - Firebase Authentication handles account creation, login, logout, and password resets.
 - Only `sumiitkumar.it@gmail.com` and `amiitkumar.it@gmail.com` are allowed to sign in.
 - Firestore stores account records in `accounts/{uid}`.
-- Firestore stores sales in the shared `sales` collection. Both allowed email accounts see, add, and clear the same bills; legacy bills are moved to the shared store ID when the app loads.
+- Firestore stores sales in the shared `sales` collection. Both allowed email accounts see and add the same bills. Existing records are read without a write/migration during startup.
 - Use the project selector in the header to switch workspaces without signing in again. 99 Mall shows its billing, sales, and expenses; Aimur Goldmedal shows its separate Goldmedal bills and reports. The workspaces use the same Firebase project and login but separate Firestore collections.
 - Standard bills are validated at ₹99 per item, while manual bills can use any positive whole-rupee amount.
 - Manual bills require a reason (up to 300 characters); remarks are saved with the bill and shown in the sales table and printed receipt.
 - Goldmedal bills use the `goldmedal_sales` collection; their date and time are recorded automatically when saved, and remarks are required.
-- Deleting an individual bill or clearing all 99 Mall sales requires confirming the action and entering the deletion password. This browser-side password prompt is an extra safeguard, not a replacement for Firebase account security.
-- Only the two allowlisted emails can access store data; sales and expense updates are restricted to the legacy-owner migration, and Goldmedal bills are immutable after creation.
+- Individual 99 Mall and Goldmedal bills can be deleted with a confirmation popup followed by the `12345` deletion password.
+- Both allowlisted emails can read and write 99 Mall sales, miscellaneous expenses, and Goldmedal bills. Reports remain separated by workspace and collection.
 - Changes to `firestore.rules` take effect only after publishing them to the `mallbrahmpur` Firebase project.
 
 ## Build and deploy

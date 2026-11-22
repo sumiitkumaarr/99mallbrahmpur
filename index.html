@@ -72,7 +72,7 @@
         <nav class="main-nav" aria-label="Main navigation">
           <button class="nav-item active" type="button" data-page="billing" data-project="99mall" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
           <button class="nav-item" type="button" data-page="sales" data-project="99mall" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
-          <button class="nav-item goldmedal-nav-item" type="button" data-page="goldmedal" data-project="aimur-goldmedal" aria-label="Aimur Goldmedal"><span class="nav-icon" aria-hidden="true">G</span>Goldmedal</button>
+          <button class="nav-item" type="button" data-page="goldmedal" data-project="aimur-goldmedal" aria-label="Switch to Aimur Goldmedal"><span class="nav-icon" aria-hidden="true">G</span>Goldmedal<span class="nav-shortcut" aria-hidden="true">↗</span></button>
           <button class="nav-item" type="button" data-page="expenses" data-project="99mall" aria-label="Miscellaneous expenses"><span class="nav-icon" aria-hidden="true">₹</span>Misc. expenses</button>
         </nav>
         <div class="sidebar-bottom" data-project="99mall">
@@ -126,7 +126,6 @@
                 <div class="welcome-feature-tag"><span>✦</span> Manual billing too</div>
               </div>
             </section>
-            <div class="page-heading"><span class="eyebrow">FAST CHECKOUT</span><h1>Create a new bill<span class="heading-period">.</span></h1><p>Add the number of items and we’ll take care of the math.</p></div>
             <div class="billing-layout">
               <section id="bill-builder" class="panel bill-builder">
                 <div class="panel-heading"><div><h2>Bill details</h2><p>Choose standard pricing or enter a custom amount</p></div><span id="fixed-price" class="fixed-price">₹99 <small>/ item</small></span></div>
@@ -291,7 +290,7 @@
                       </select>
                     </label>
                   </div>
-                  <label>Remarks (optional)<textarea id="expense-description" name="description" rows="3" maxlength="300" placeholder="What was this expense for? (optional)"></textarea></label>
+                  <label><span class="field-label">Remarks (optional)</span><textarea id="expense-description" name="description" rows="3" maxlength="300" placeholder="What was this expense for? (optional)"></textarea></label>
                   <button id="save-expense-button" class="button button-primary" type="submit">Save expense <span>→</span></button>
                   <p id="expense-message" class="expense-message" aria-live="polite"></p>
                 </form>
@@ -325,7 +324,7 @@
                   <div class="expense-form-grid goldmedal-form-grid">
                     <label>Amount (₹)<input id="goldmedal-amount" name="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="1500" required /></label>
                   </div>
-                  <label>Remarks <span>(required)</span><textarea id="goldmedal-remarks" name="remarks" rows="3" maxlength="300" placeholder="Customer or item details" required></textarea></label>
+                  <label><span class="field-label">Remarks <span class="field-required">(required)</span></span><textarea id="goldmedal-remarks" name="remarks" rows="3" maxlength="300" placeholder="Customer or item details" required></textarea></label>
                   <button id="save-goldmedal-button" class="button button-primary" type="submit">Save bill <span>→</span></button>
                   <p id="goldmedal-message" class="expense-message" aria-live="polite"></p>
                 </form>
@@ -406,6 +405,17 @@
         </form>
       </div>
     </dialog>
+    <dialog id="delete-goldmedal-dialog" class="confirmation-dialog" aria-labelledby="delete-goldmedal-dialog-title" aria-describedby="delete-goldmedal-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">CONFIRM DELETE</span>
+        <h2 id="delete-goldmedal-dialog-title">Delete this Goldmedal bill?</h2>
+        <p id="delete-goldmedal-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep bill</button>
+          <button class="button button-danger" type="submit" value="confirm">Yes, delete bill</button>
+        </form>
+      </div>
+    </dialog>
     <dialog id="delete-password-dialog" class="confirmation-dialog" aria-labelledby="delete-password-title" aria-describedby="delete-password-description">
       <div class="confirmation-dialog-content">
         <span class="eyebrow">PASSWORD REQUIRED</span>
@@ -419,17 +429,6 @@
             <button id="delete-password-cancel" class="button button-secondary" type="button">Cancel</button>
             <button class="button button-danger" type="submit">Delete bill</button>
           </div>
-        </form>
-      </div>
-    </dialog>
-    <dialog id="delete-goldmedal-dialog" class="confirmation-dialog" aria-labelledby="delete-goldmedal-dialog-title" aria-describedby="delete-goldmedal-dialog-message">
-      <div class="confirmation-dialog-content">
-        <span class="eyebrow">CONFIRM DELETE</span>
-        <h2 id="delete-goldmedal-dialog-title">Delete this Goldmedal bill?</h2>
-        <p id="delete-goldmedal-dialog-message"></p>
-        <form method="dialog" class="confirmation-dialog-actions">
-          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep bill</button>
-          <button class="button button-danger" type="submit" value="confirm">Yes, delete bill</button>
         </form>
       </div>
     </dialog>

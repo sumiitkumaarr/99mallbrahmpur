@@ -818,7 +818,20 @@ function confirmExpenseDeletion(expense) {
 function confirmBillDeletion(sale, projectLabel) {
   const dialog = $("#delete-bill-dialog");
   $("#delete-bill-dialog-message").textContent =
-    `Permanently delete ${sale.id} for ${formatCurrency(sale.total)} from ${projectLabel}?`;
+    `Do you want to delete ${sale.id} for ${formatCurrency(sale.total)} from ${projectLabel}?`;
+  dialog.returnValue = "";
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "confirm");
+    }, { once: true });
+    dialog.showModal();
+  });
+}
+
+function confirmGoldmedalDeletion(sale) {
+  const dialog = $("#delete-goldmedal-dialog");
+  $("#delete-goldmedal-dialog-message").textContent =
+    `Do you want to delete ${sale.id} for ${formatCurrency(sale.total)}?`;
   dialog.returnValue = "";
   return new Promise((resolve) => {
     dialog.addEventListener("close", () => {
@@ -856,8 +869,7 @@ function confirmDeletePassword() {
 }
 
 async function deleteSale(sale, button) {
-  const confirmed = await confirmBillDeletion(sale, "99 Mall");
-  if (!confirmed) return;
+  if (!await confirmBillDeletion(sale, "99 Mall")) return;
   if (!await confirmDeletePassword()) return;
   const status = $("#delete-bill-message");
   button.disabled = true;
@@ -877,22 +889,8 @@ async function deleteSale(sale, button) {
   }
 }
 
-function confirmGoldmedalDeletion(sale) {
-  const dialog = $("#delete-goldmedal-dialog");
-  $("#delete-goldmedal-dialog-message").textContent =
-    `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}?`;
-  dialog.returnValue = "";
-  return new Promise((resolve) => {
-    dialog.addEventListener("close", () => {
-      resolve(dialog.returnValue === "confirm");
-    }, { once: true });
-    dialog.showModal();
-  });
-}
-
 async function deleteGoldmedalSale(sale, button) {
-  const confirmed = await confirmGoldmedalDeletion(sale);
-  if (!confirmed) return;
+  if (!await confirmGoldmedalDeletion(sale)) return;
   if (!await confirmDeletePassword()) return;
   button.disabled = true;
   try {

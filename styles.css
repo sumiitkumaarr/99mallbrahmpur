@@ -150,8 +150,8 @@ button { cursor: pointer; }
 .delete-password-form input:focus { border-color: #9c87f2; outline: 0; box-shadow: 0 0 0 3px #7455e21a; }
 .delete-password-form .form-error { margin: 8px 0 0; }
 .delete-password-form .confirmation-dialog-actions { margin-top: 15px; }
-.clear-sales-message { min-height: 0; margin: -13px 0 17px; color: #b5414b; font-size: 13px; }
-.clear-sales-message.success { color: #329169; }
+.delete-bill-message { min-height: 0; margin: -13px 0 17px; color: #b5414b; font-size: 13px; }
+.delete-bill-message.success { color: #329169; }
 .stats-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 15px; margin-bottom: 19px; }
 .stat-card { min-height: 142px; border: 1px solid #ecebf0; border-radius: 12px; padding: 17px 18px; background: white; }
 .stat-highlight { border-color: #e8e1ff; background: linear-gradient(140deg,#fbfaff,#f6f3ff); }

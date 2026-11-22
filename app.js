@@ -1253,6 +1253,13 @@ function setPage(page, { updateHistory = true } = {}) {
   renderExpenses();
   renderGoldmedalSales();
   queueChartResize();
+  if (page === "billing" && window.matchMedia("(max-width: 680px)").matches) {
+    $("#bill-builder").scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+    return;
+  }
   window.scrollTo({
     top: 0,
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
@@ -1318,9 +1325,7 @@ async function enterApp() {
     timeZone: "Asia/Kolkata",
     weekday: "short", day: "numeric", month: "short",
   });
-  if (!PROJECTS[activeProject].pages.includes(currentPage)) {
-    currentPage = PROJECTS[activeProject].defaultPage;
-  }
+  currentPage = PROJECTS[activeProject].defaultPage;
   pageHistoryIndex = 0;
   window.history.replaceState(
     {
@@ -1332,17 +1337,26 @@ async function enterApp() {
     "",
     window.location.href,
   );
-  try {
-    await ensureBillNumberMigration();
-    clearDataLoadError("bill_counters");
-  } catch (error) {
-    console.error("Could not migrate bills to sequential numbering:", error);
-    setDataLoadError("bill_counters", error);
-  }
-  await loadSales();
-  await loadExpenses();
-  await loadGoldmedalSales();
+
+  // Render the checkout immediately; Firestore requests must not block login.
   setPage(currentPage, { updateHistory: false });
+
+  const loadData = activeProject === "aimur-goldmedal"
+    ? [loadGoldmedalSales()]
+    : [loadSales(), loadExpenses()];
+
+  ensureBillNumberMigration()
+    .then(() => clearDataLoadError("bill_counters"))
+    .catch((error) => {
+      console.error("Could not migrate bills to sequential numbering:", error);
+      setDataLoadError("bill_counters", error);
+    });
+
+  await Promise.allSettled(loadData);
+  updateDashboard();
+  renderExpenses();
+  renderGoldmedalSales();
+  queueChartResize();
 }
 
 window.addEventListener("popstate", (event) => {

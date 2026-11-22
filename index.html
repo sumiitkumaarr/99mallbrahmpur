@@ -66,8 +66,8 @@
 
     <main id="app-screen" class="app-screen hidden">
       <aside class="sidebar">
-        <a class="brand brand-dark sidebar-brand" href="#"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
-        <div class="store-chip"><span id="store-avatar" class="store-avatar">9</span><span><strong id="store-name">99 Mall</strong><small>Store workspace</small></span><span class="chip-dot"></span></div>
+        <a class="brand brand-dark sidebar-brand" href="#" data-page="billing" data-project="99mall" aria-label="Open 99 Mall new bill"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
+        <button class="store-chip" type="button" data-page="billing" data-project="99mall" aria-label="Open 99 Mall new bill"><span id="store-avatar" class="store-avatar">9</span><span><strong id="store-name">99 Mall</strong><small>Store workspace</small></span><span class="chip-dot"></span></button>
         <span class="nav-label">WORKSPACE</span>
         <nav class="main-nav" aria-label="Main navigation">
           <button class="nav-item active" type="button" data-page="billing" data-project="99mall" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
@@ -81,7 +81,7 @@
         <header class="topbar">
           <div class="breadcrumb">
             <button id="back-button" class="back-button" type="button" aria-label="Go back to previous page" disabled><span aria-hidden="true">←</span><span>Back</span></button>
-            <span id="workspace-link" class="workspace-link">99 Mall</span>
+            <button id="workspace-link" class="workspace-link" type="button" data-page="billing" data-project="99mall">99 Mall</button>
             <span class="crumb-separator">/</span>
             <strong id="page-breadcrumb">New bill</strong>
           </div>

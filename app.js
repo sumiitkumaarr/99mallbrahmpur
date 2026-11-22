@@ -1794,6 +1794,7 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.go) {
     setPage(target.dataset.go);
   } else if (target.dataset.page) {
+    event.preventDefault();
     if (target.dataset.project) {
       setProject(target.dataset.project, target.dataset.page);
     } else {

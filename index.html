@@ -123,7 +123,19 @@
                   <label><input name="billing-mode" type="radio" value="standard" checked /> ₹99 per item</label>
                   <label><input name="billing-mode" type="radio" value="manual" /> Manual amount</label>
                 </fieldset>
-                <div class="product-line"><div class="product-thumbnail">99</div><div class="product-info"><strong>Everyday item</strong><span>Standard store item</span></div><span id="product-price" class="product-price">₹99</span></div>
+                <div class="billing-quick-links" aria-label="Other entry types">
+                  <button class="billing-quick-link" type="button" data-page="expenses">
+                    <span class="billing-quick-icon expense-quick-icon" aria-hidden="true">₹</span>
+                    <span class="billing-quick-copy"><strong>Misc. expenses</strong><small>Record an expense</small></span>
+                    <span class="billing-quick-arrow" aria-hidden="true">→</span>
+                  </button>
+                  <button class="billing-quick-link" type="button" data-page="goldmedal">
+                    <span class="billing-quick-icon goldmedal-quick-icon" aria-hidden="true">G</span>
+                    <span class="billing-quick-copy"><strong>Goldmedal</strong><small>Add a Goldmedal bill</small></span>
+                    <span class="billing-quick-arrow" aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div class="product-line"><div id="product-thumbnail" class="product-thumbnail">99</div><div class="product-info"><strong id="product-name">99 Mall item</strong><span id="product-description">Standard price · ₹99 each</span></div><span id="product-price" class="product-price">₹99</span></div>
                 <div class="checkout-controls">
                   <div id="quantity-entry" class="quantity-entry">
                     <label class="quantity-label" for="item-quantity">Quantity</label>
@@ -150,6 +162,20 @@
                 </div>
                 <p id="bill-message" class="bill-message" aria-live="polite"></p>
               </section>
+              <section class="panel billing-report-preview">
+                <div class="panel-heading billing-report-heading">
+                  <div><h2>Live sales &amp; reports</h2><p>Totals refresh automatically after each saved bill.</p></div>
+                  <button class="text-button" type="button" data-page="sales">Full reports <span>→</span></button>
+                </div>
+                <div class="billing-report-stats">
+                  <article class="billing-report-stat billing-report-highlight"><span>Today</span><strong id="billing-report-today">₹0</strong><small id="billing-report-today-count">0 bills today</small></article>
+                  <article class="billing-report-stat"><span>Yesterday</span><strong id="billing-report-yesterday">₹0</strong><small id="billing-report-yesterday-count">0 bills yesterday</small></article>
+                  <article class="billing-report-stat"><span>This week</span><strong id="billing-report-week">₹0</strong><small id="billing-report-week-items">0 items sold</small></article>
+                  <article class="billing-report-stat"><span>This month</span><strong id="billing-report-month">₹0</strong><small id="billing-report-month-count">0 bills this month</small></article>
+                </div>
+                <div class="billing-recent-heading"><h3>Recent bills</h3><span>Latest 5</span></div>
+                <div id="billing-recent-sales" class="recent-sales billing-recent-sales"></div>
+              </section>
             </div>
             <section id="print-receipt" class="panel print-receipt hidden">
               <div class="print-receipt-top">
@@ -163,20 +189,6 @@
               <div id="receipt-remarks-row" class="print-receipt-remarks hidden"><span>Remarks</span><strong id="receipt-remarks"></strong></div>
               <div class="print-receipt-total"><span>Total paid</span><strong id="receipt-grand-total">₹0</strong></div>
               <p class="print-receipt-thanks">Thank you for shopping with us!</p>
-            </section>
-            <section class="panel billing-report-preview">
-              <div class="panel-heading billing-report-heading">
-                <div><h2>Live sales &amp; reports</h2><p>Totals refresh automatically after each saved bill.</p></div>
-                <button class="text-button" type="button" data-page="sales">Full reports <span>→</span></button>
-              </div>
-              <div class="billing-report-stats">
-                <article class="billing-report-stat billing-report-highlight"><span>Today</span><strong id="billing-report-today">₹0</strong><small id="billing-report-today-count">0 bills today</small></article>
-                <article class="billing-report-stat"><span>Yesterday</span><strong id="billing-report-yesterday">₹0</strong><small id="billing-report-yesterday-count">0 bills yesterday</small></article>
-                <article class="billing-report-stat"><span>This week</span><strong id="billing-report-week">₹0</strong><small id="billing-report-week-items">0 items sold</small></article>
-                <article class="billing-report-stat"><span>This month</span><strong id="billing-report-month">₹0</strong><small id="billing-report-month-count">0 bills this month</small></article>
-              </div>
-              <div class="billing-recent-heading"><h3>Recent bills</h3><span>Latest 5</span></div>
-              <div id="billing-recent-sales" class="recent-sales billing-recent-sales"></div>
             </section>
           </section>
 
@@ -350,7 +362,6 @@
               <div id="goldmedal-table-wrap" class="sales-table-wrap"></div>
             </section>
           </section>
-          <footer class="app-footer"><span>99<span class="footer-muted">mall</span> <span>·</span> Store billing, made simple</span><span>Standard item price <strong>₹99</strong></span></footer>
         </div>
       </section>
     </main>

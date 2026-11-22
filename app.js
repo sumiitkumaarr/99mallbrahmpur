@@ -900,12 +900,9 @@ function setPage(page) {
   if (page === "billing") {
     $("#item-quantity").value = "1";
     document.querySelector('input[name="billing-mode"][value="standard"]').checked = true;
-    $("#manual-amount-entry").classList.add("hidden");
-    $("#quantity-entry").classList.remove("hidden");
     $("#manual-amount").value = "";
     $("#manual-remarks").value = "";
-    $("#fixed-price").innerHTML = "₹99 <small>/ item</small>";
-    $("#product-price").textContent = "₹99";
+    updateBillingModeUI();
     $("#bill-message").textContent = "";
     $("#bill-message").classList.remove("error");
     $("#print-receipt").classList.add("hidden");
@@ -1043,7 +1040,7 @@ async function handlePasswordReset(event) {
 }
 
 function updateBillTotal() {
-  const manualMode = document.querySelector('input[name="billing-mode"]:checked').value === "manual";
+  const manualMode = getManualBillingMode();
   const field = manualMode ? $("#manual-amount") : $("#item-quantity");
   const parsed = Number(field.value);
   const quantity = manualMode ? 1 : parsed;
@@ -1058,6 +1055,23 @@ function updateBillTotal() {
   $("#print-bill-button").disabled = !isValid;
   $("#bill-total").textContent = isValid ? formatCurrency(total) : "—";
   return isValid ? { quantity, total, manualAmount: manualMode, remarks } : null;
+}
+
+function getManualBillingMode() {
+  return $('input[name="billing-mode"]:checked').value === "manual";
+}
+
+function updateBillingModeUI() {
+  const manualMode = getManualBillingMode();
+  $("#quantity-entry").classList.toggle("hidden", manualMode);
+  $("#manual-amount-entry").classList.toggle("hidden", !manualMode);
+  $("#fixed-price").innerHTML = manualMode ? "Custom <small>amount</small>" : "₹99 <small>/ item</small>";
+  $("#product-thumbnail").textContent = manualMode ? "₹" : "99";
+  $("#product-name").textContent = manualMode ? "Manual bill" : "99 Mall item";
+  $("#product-description").textContent = manualMode
+    ? "Custom total · remarks required"
+    : "Standard price · ₹99 each";
+  $("#product-price").textContent = manualMode ? "Custom" : "₹99";
 }
 
 async function loadSales() {
@@ -1368,7 +1382,6 @@ $("#logout-button").addEventListener("click", async (event) => {
     sales = [];
     expenses = [];
     goldmedalSales = [];
-    goldmedalSales = [];
     account = null;
   } catch (error) {
     console.error("Could not sign out:", error);
@@ -1412,12 +1425,8 @@ $("#manual-remarks").addEventListener("input", () => {
   updateBillTotal();
 });
 document.querySelectorAll('input[name="billing-mode"]').forEach((input) => {
-  input.addEventListener("change", (event) => {
-    const manualMode = event.currentTarget.value === "manual";
-    $("#quantity-entry").classList.toggle("hidden", manualMode);
-    $("#manual-amount-entry").classList.toggle("hidden", !manualMode);
-    $("#fixed-price").innerHTML = manualMode ? "Custom <small>amount</small>" : "₹99 <small>/ item</small>";
-    $("#product-price").textContent = manualMode ? "Custom" : "₹99";
+  input.addEventListener("change", () => {
+    updateBillingModeUI();
     billPendingSave = true;
     $("#print-bill-button").textContent = "Save & Print";
     updateBillTotal();

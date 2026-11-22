@@ -801,12 +801,25 @@ function renderGoldmedalReports() {
   }, true);
 }
 
-function confirmBillDeletion(sale) {
-  const dialog = $("#delete-bill-dialog");
-  $("#delete-bill-dialog-message").textContent =
-    `Permanently delete ${sale.id} for ${formatCurrency(sale.total)}? This will also update your sales reports.`;
+function confirmExpenseDeletion(expense) {
+  const dialog = $("#delete-expense-dialog");
+  $("#delete-expense-dialog-message").textContent =
+    `Permanently delete the ${escapeHTML(expense.category)} expense for ${formatCurrency(expense.amount)}?`;
   dialog.returnValue = "";
 
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "confirm");
+    }, { once: true });
+    dialog.showModal();
+  });
+}
+
+function confirmBillDeletion(sale, projectLabel) {
+  const dialog = $("#delete-bill-dialog");
+  $("#delete-bill-dialog-message").textContent =
+    `Permanently delete ${sale.id} for ${formatCurrency(sale.total)} from ${projectLabel}?`;
+  dialog.returnValue = "";
   return new Promise((resolve) => {
     dialog.addEventListener("close", () => {
       resolve(dialog.returnValue === "confirm");
@@ -823,7 +836,6 @@ function confirmDeletePassword() {
   form.reset();
   error.textContent = "";
   dialog.returnValue = "";
-
   return new Promise((resolve) => {
     const handleSubmit = (event) => {
       event.preventDefault();
@@ -843,31 +855,15 @@ function confirmDeletePassword() {
   });
 }
 
-function confirmExpenseDeletion(expense) {
-  const dialog = $("#delete-expense-dialog");
-  $("#delete-expense-dialog-message").textContent =
-    `Permanently delete the ${escapeHTML(expense.category)} expense for ${formatCurrency(expense.amount)}?`;
-  dialog.returnValue = "";
-
-  return new Promise((resolve) => {
-    dialog.addEventListener("close", () => {
-      resolve(dialog.returnValue === "confirm");
-    }, { once: true });
-    dialog.showModal();
-  });
-}
-
 async function deleteSale(sale, button) {
+  const confirmed = await confirmBillDeletion(sale, "99 Mall");
+  if (!confirmed) return;
+  if (!await confirmDeletePassword()) return;
   const status = $("#delete-bill-message");
   button.disabled = true;
   status.textContent = "";
   status.classList.remove("success");
-
   try {
-    const confirmed = await confirmBillDeletion(sale);
-    if (!confirmed) return;
-    if (!await confirmDeletePassword()) return;
-
     await deleteDoc(doc(db, "sales", sale.firestoreId));
     sales = sales.filter((item) => item.firestoreId !== sale.firestoreId);
     updateDashboard();
@@ -876,23 +872,6 @@ async function deleteSale(sale, button) {
   } catch (error) {
     console.error("Could not delete bill:", error);
     status.textContent = firestoreActionError(`Could not delete ${sale.id}`, error);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-async function deleteExpense(expense, button) {
-  const confirmed = await confirmExpenseDeletion(expense);
-  if (!confirmed) return;
-  button.disabled = true;
-  try {
-    await deleteDoc(doc(db, "expenses", expense.firestoreId));
-    expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
-    renderExpenses();
-  } catch (error) {
-    console.error("Could not delete expense:", error);
-    $("#expense-message").textContent = firestoreActionError("Could not delete expense", error);
-    $("#expense-message").classList.add("error");
   } finally {
     button.disabled = false;
   }
@@ -921,10 +900,28 @@ async function deleteGoldmedalSale(sale, button) {
     goldmedalSales = goldmedalSales.filter((item) => item.firestoreId !== sale.firestoreId);
     renderGoldmedalSales();
     renderGoldmedalReports();
+    $("#goldmedal-message").textContent = `${sale.id} deleted.`;
   } catch (error) {
     console.error("Could not delete Goldmedal bill:", error);
     $("#goldmedal-message").textContent = firestoreActionError("Could not delete bill", error);
     $("#goldmedal-message").classList.add("error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function deleteExpense(expense, button) {
+  const confirmed = await confirmExpenseDeletion(expense);
+  if (!confirmed) return;
+  button.disabled = true;
+  try {
+    await deleteDoc(doc(db, "expenses", expense.firestoreId));
+    expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
+    renderExpenses();
+  } catch (error) {
+    console.error("Could not delete expense:", error);
+    $("#expense-message").textContent = firestoreActionError("Could not delete expense", error);
+    $("#expense-message").classList.add("error");
   } finally {
     button.disabled = false;
   }

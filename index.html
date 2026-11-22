@@ -384,6 +384,17 @@
         </form>
       </div>
     </dialog>
+    <dialog id="delete-expense-dialog" class="confirmation-dialog" aria-labelledby="delete-expense-dialog-title" aria-describedby="delete-expense-dialog-message">
+      <div class="confirmation-dialog-content">
+        <span class="eyebrow">CONFIRM DELETE</span>
+        <h2 id="delete-expense-dialog-title">Delete this expense?</h2>
+        <p id="delete-expense-dialog-message"></p>
+        <form method="dialog" class="confirmation-dialog-actions">
+          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep expense</button>
+          <button class="button button-danger" type="submit" value="confirm">Yes, delete expense</button>
+        </form>
+      </div>
+    </dialog>
     <dialog id="delete-bill-dialog" class="confirmation-dialog" aria-labelledby="delete-bill-dialog-title" aria-describedby="delete-bill-dialog-message">
       <div class="confirmation-dialog-content">
         <span class="eyebrow">CONFIRM DELETE</span>
@@ -408,17 +419,6 @@
             <button id="delete-password-cancel" class="button button-secondary" type="button">Cancel</button>
             <button class="button button-danger" type="submit">Continue</button>
           </div>
-        </form>
-      </div>
-    </dialog>
-    <dialog id="delete-expense-dialog" class="confirmation-dialog" aria-labelledby="delete-expense-dialog-title" aria-describedby="delete-expense-dialog-message">
-      <div class="confirmation-dialog-content">
-        <span class="eyebrow">CONFIRM DELETE</span>
-        <h2 id="delete-expense-dialog-title">Delete this expense?</h2>
-        <p id="delete-expense-dialog-message"></p>
-        <form method="dialog" class="confirmation-dialog-actions">
-          <button class="button button-secondary" type="submit" value="cancel" autofocus>No, keep expense</button>
-          <button class="button button-danger" type="submit" value="confirm">Yes, delete expense</button>
         </form>
       </div>
     </dialog>

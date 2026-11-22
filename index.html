@@ -72,8 +72,6 @@
         <nav class="main-nav" aria-label="Main navigation">
           <button class="nav-item active" type="button" data-page="billing" data-project="99mall" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
           <button class="nav-item" type="button" data-page="sales" data-project="99mall" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
-          <button class="nav-item" type="button" data-page="goldmedal" data-project="aimur-goldmedal" aria-label="Switch to Aimur Goldmedal"><span class="nav-icon" aria-hidden="true">G</span>Goldmedal<span class="nav-shortcut" aria-hidden="true">↗</span></button>
-          <button class="nav-item" type="button" data-page="expenses" data-project="99mall" aria-label="Miscellaneous expenses"><span class="nav-icon" aria-hidden="true">₹</span>Misc. expenses</button>
         </nav>
         <div class="sidebar-bottom" data-project="99mall">
           <div class="help-card"><span class="help-spark">✳</span><strong>₹99 standard, manual option</strong><p>Quick quantity billing or enter another item's price.</p></div>
@@ -90,7 +88,6 @@
           <label class="project-switcher">
             <select id="project-switcher" aria-label="Select project">
               <option value="99mall">99 Mall</option>
-              <option value="aimur-goldmedal">Aimur Goldmedal</option>
             </select>
           </label>
           <div class="topbar-right">
@@ -133,19 +130,9 @@
                   <legend>Billing type</legend>
                   <label><input name="billing-mode" type="radio" value="standard" checked /> ₹99 per item</label>
                   <label><input name="billing-mode" type="radio" value="manual" /> Manual amount</label>
+                  <label><input name="billing-mode" type="radio" value="expense" /> Misc. expenses</label>
+                  <label><input name="billing-mode" type="radio" value="goldmedal" /> Goldmedal Electrical</label>
                 </fieldset>
-                <div class="billing-quick-links" aria-label="Other entry types">
-                  <button class="billing-quick-link" type="button" data-page="expenses" data-project="99mall">
-                    <span class="billing-quick-icon expense-quick-icon" aria-hidden="true">₹</span>
-                    <span class="billing-quick-copy"><strong>Misc. expenses</strong><small>Record an expense</small></span>
-                    <span class="billing-quick-arrow" aria-hidden="true">→</span>
-                  </button>
-                  <button class="billing-quick-link" type="button" data-page="goldmedal" data-project="aimur-goldmedal">
-                    <span class="billing-quick-icon goldmedal-quick-icon" aria-hidden="true">G</span>
-                    <span class="billing-quick-copy"><strong>Goldmedal</strong><small>Add a Goldmedal bill</small></span>
-                    <span class="billing-quick-arrow" aria-hidden="true">→</span>
-                  </button>
-                </div>
                 <div class="product-line"><div id="product-thumbnail" class="product-thumbnail">99</div><div class="product-info"><strong id="product-name">99 Mall item</strong><span id="product-description">Standard price · ₹99 each</span></div><span id="product-price" class="product-price">₹99</span></div>
                 <div class="checkout-controls">
                   <div id="quantity-entry" class="quantity-entry">
@@ -164,6 +151,30 @@
                     <label class="manual-remarks-label" for="manual-remarks">Remarks <span>(required)</span></label>
                     <textarea id="manual-remarks" maxlength="300" rows="3" placeholder="Why is this manual bill being added?" aria-describedby="manual-remarks-hint"></textarea>
                     <p id="manual-remarks-hint">Add a short reason for this manual bill (up to 300 characters).</p>
+                  </div>
+                  <div id="billing-expense-entry" class="quantity-entry billing-expense-entry hidden">
+                    <label class="quantity-label" for="billing-expense-amount">Expense amount</label>
+                    <div class="manual-amount-control"><span>₹</span><input id="billing-expense-amount" type="number" min="1" step="1" placeholder="500" inputmode="numeric" aria-label="Enter miscellaneous expense amount" /></div>
+                    <label class="billing-expense-category-label" for="billing-expense-category">Category</label>
+                    <select id="billing-expense-category" class="billing-expense-category">
+                      <option value="">Choose category</option>
+                      <option>Food</option>
+                      <option>Rent</option>
+                      <option>Utilities</option>
+                      <option>Transport</option>
+                      <option>Supplies</option>
+                      <option>Maintenance</option>
+                      <option>Wages</option>
+                      <option>Other</option>
+                    </select>
+                    <label class="manual-remarks-label" for="billing-expense-description">Remarks <span>(optional)</span></label>
+                    <textarea id="billing-expense-description" maxlength="300" rows="3" placeholder="What was this expense for?" ></textarea>
+                  </div>
+                  <div id="billing-goldmedal-entry" class="quantity-entry billing-expense-entry hidden">
+                    <label class="quantity-label" for="billing-goldmedal-amount">Goldmedal bill amount</label>
+                    <div class="manual-amount-control"><span>₹</span><input id="billing-goldmedal-amount" type="number" min="1" step="1" placeholder="1500" inputmode="numeric" aria-label="Enter Goldmedal Electrical bill amount" /></div>
+                    <label class="manual-remarks-label" for="billing-goldmedal-remarks">Remarks <span>(required)</span></label>
+                    <textarea id="billing-goldmedal-remarks" maxlength="300" rows="3" placeholder="Customer or item details"></textarea>
                   </div>
                   <div class="bill-total"><span>Total amount</span><strong id="bill-total">₹99</strong></div>
                 </div>
@@ -254,6 +265,8 @@
                       <option value="all">All reports</option>
                       <option value="standard">99 Mall bills</option>
                       <option value="manual">Manual bills</option>
+                      <option value="expense">Misc. expenses</option>
+                      <option value="goldmedal">Goldmedal Electrical</option>
                     </select>
                   </label>
                   <label class="bill-search-label" for="bill-search-input">

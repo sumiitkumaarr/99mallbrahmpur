@@ -301,6 +301,11 @@ button { cursor: pointer; }
 #billing-page #manual-remarks { width: min(100%, 430px); min-height: 82px; resize: vertical; border: 1px solid #dce4ef; border-radius: 10px; padding: 11px 12px; color: #33333c; font-size: 13px; line-height: 1.5; }
 #billing-page #manual-remarks:focus { border-color: #7695c1; outline: 0; box-shadow: 0 0 0 3px #6485b524; }
 #billing-page #manual-remarks::placeholder { color: #a4a8b1; }
+#billing-page .billing-expense-entry { width: min(100%, 430px); }
+#billing-page .billing-expense-category-label { margin-top: 2px; color: #51515c; font-size: 13px; font-weight: 700; }
+#billing-page .billing-expense-category { width: 232px; height: 44px; border: 1px solid #dce4ef; border-radius: 10px; padding: 0 11px; color: #33333c; background: #fff; }
+#billing-page .billing-expense-category:focus { border-color: #7695c1; outline: 0; box-shadow: 0 0 0 3px #6485b524; }
+#billing-page #billing-expense-description { width: 100%; min-height: 82px; resize: vertical; border: 1px solid #dce4ef; border-radius: 10px; padding: 11px 12px; color: #33333c; font-size: 13px; line-height: 1.5; }
 #billing-page .bill-total { display: grid; justify-items: end; gap: 6px; margin: 0; border: 0; padding: 0 2px 6px 0; color: #666672; font-size: 15px; }
 #billing-page .bill-total strong { font-size: 30px; }
 #billing-page .bill-actions { display: flex; gap: 12px; margin-top: 25px; }
@@ -1107,4 +1112,102 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
   #billing-page .bill-total strong { font-size: 23px; }
   #billing-page .billing-report-heading { flex-direction: row; align-items: flex-start; justify-content: space-between; }
   #billing-page .billing-report-heading .text-button { white-space: nowrap; }
+}
+
+/* Polished billing and report controls */
+#billing-page .billing-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+#billing-page .billing-mode legend { grid-column: 1 / -1; }
+#billing-page .billing-mode label {
+  min-height: 52px;
+  border-radius: 12px;
+  padding: 0 15px;
+  box-shadow: inset 0 1px #fff;
+  transition: transform .18s, border-color .18s, background .18s, box-shadow .18s;
+}
+#billing-page .billing-mode label:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px #2b507518;
+}
+#billing-page .billing-mode label:has(input:checked) {
+  border-color: #7ca1c9;
+  background: linear-gradient(135deg, #edf8f6, #edf2ff);
+  box-shadow: 0 7px 16px #4772a21f, inset 0 1px #fff;
+}
+#billing-page .product-line {
+  border-radius: 16px;
+  box-shadow: inset 0 1px #fff;
+}
+#billing-page .checkout-controls {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) minmax(220px, 300px);
+  align-items: end;
+}
+#billing-page .bill-total {
+  min-height: 82px;
+  align-content: center;
+  border: 1px solid #dce6f3;
+  border-radius: 15px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #f7fbfe, #edf4fb);
+  box-shadow: inset 0 1px #fff, 0 8px 20px #2949670d;
+}
+#billing-page .save-bill {
+  min-height: 60px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #477fae, #5a72ba);
+  box-shadow: 0 12px 24px #466b9d38;
+}
+#billing-page .print-bill-button {
+  min-height: 60px;
+  border-radius: 13px;
+}
+.report-stats .stat-card,
+#billing-page .billing-report-stat {
+  min-height: 126px;
+  border-radius: 16px;
+  box-shadow: 0 12px 28px #233c5a12, inset 0 1px #fff;
+}
+.bill-search-label select,
+.bill-search-label input,
+.daily-date-controls input,
+.daily-date-controls select,
+.expense-date-filter input,
+.expense-date-controls input {
+  border-radius: 10px;
+  border-color: #dce5ef;
+  background: #fff;
+  box-shadow: 0 4px 12px #29496709;
+}
+.sales-panel,
+.daily-report-panel,
+.sales-chart-panel,
+.expense-list-panel {
+  border-radius: 20px;
+  box-shadow: 0 16px 42px #233c5a10, inset 0 1px #fff;
+}
+.sale-row,
+.expense-table tbody tr,
+.sales-table tbody tr {
+  transition: background .16s, transform .16s;
+}
+.sale-row:hover,
+.expense-table tbody tr:hover,
+.sales-table tbody tr:hover {
+  transform: translateX(2px);
+}
+
+@media (max-width: 680px) {
+  #billing-page .billing-mode { grid-template-columns: 1fr; }
+  #billing-page .billing-mode label { min-height: 48px; }
+  #billing-page .checkout-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #billing-page .bill-total {
+    width: 100%;
+    min-height: 72px;
+  }
 }

@@ -35,7 +35,7 @@ const PROJECTS = {
     collections: ["sales", "expenses"],
   },
   "aimur-goldmedal": {
-    label: "Aimur Goldmedal",
+    label: "Goldmedal Electrical",
     avatar: "A",
     defaultPage: "goldmedal",
     pages: ["goldmedal"],
@@ -169,10 +169,14 @@ function authErrorMessage(error) {
 }
 
 function localDateKey(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 function formatCurrency(amount) {
@@ -271,6 +275,28 @@ function salesSummary(sales) {
 
 function salesByCategory(sales) {
   const category = $("#sales-category-filter")?.value || "all";
+  if (category === "expense") {
+    return expenses.map((expense) => ({
+      id: `EXP-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
+      firestoreId: expense.firestoreId,
+      date: expense.date,
+      time: "00:00",
+      quantity: 0,
+      total: expense.amount,
+      remarks: expense.description || expense.category || "",
+      manualAmount: false,
+      category: "expense",
+      categoryName: expense.category,
+    })).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
+  if (category === "goldmedal") {
+    return goldmedalSales.map((sale) => ({
+      ...sale,
+      quantity: sale.quantity || 1,
+      manualAmount: false,
+      category: "goldmedal",
+    })).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
   if (category === "standard") return sales.filter((sale) => sale.manualAmount !== true);
   if (category === "manual") return sales.filter((sale) => sale.manualAmount === true);
   return sales;
@@ -349,6 +375,8 @@ function renderSalesTable(sales) {
   const category = $("#sales-category-filter").value;
   if (category === "standard") filterParts.push("for 99 Mall bills");
   if (category === "manual") filterParts.push("for manual bills");
+  if (category === "expense") filterParts.push("for Misc. expenses");
+  if (category === "goldmedal") filterParts.push("for Goldmedal Electrical bills");
   if (filter) filterParts.push(`for ${formatDate(filter)}`);
   if (rawSearch) filterParts.push(`matching "${rawSearch}"`);
   $("#sales-subtitle").textContent = filterParts.length
@@ -359,6 +387,38 @@ function renderSalesTable(sales) {
     container.innerHTML = search || filter
       ? '<div class="sales-empty">No bills found for this search or date.</div>'
       : '<div class="sales-empty">No bills found.</div>';
+    return;
+  }
+  const selectedCategory = $("#sales-category-filter").value;
+  if (selectedCategory === "expense") {
+    container.innerHTML = `
+      <table class="sales-table expense-table">
+        <thead><tr><th>Date</th><th>Category</th><th>Remarks</th><th>Amount</th></tr></thead>
+        <tbody>${filtered.map((expense) => `
+          <tr>
+            <td>${formatDate(expense.date)}</td>
+            <td>${escapeHTML(expense.categoryName || expense.remarks || "Expense")}</td>
+            <td>${escapeHTML(expense.remarks || "—")}</td>
+            <td class="table-amount">${formatCurrency(expense.total)}</td>
+          </tr>
+        `).join("")}</tbody>
+      </table>`;
+    return;
+  }
+  if (selectedCategory === "goldmedal") {
+    container.innerHTML = `
+      <table class="sales-table expense-table">
+        <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Remarks</th><th>Amount</th></tr></thead>
+        <tbody>${filtered.map((sale) => `
+          <tr>
+            <td>${escapeHTML(sale.id)}</td>
+            <td>${formatDate(sale.date)}</td>
+            <td>${formatTime(sale.time)}</td>
+            <td>${escapeHTML(sale.remarks || "—")}</td>
+            <td class="table-amount">${formatCurrency(sale.total)}</td>
+          </tr>
+        `).join("")}</tbody>
+      </table>`;
     return;
   }
   container.innerHTML = `
@@ -382,7 +442,8 @@ function renderDailyReport(sales) {
       return;
     }
 
-    const date = $("#sales-date-filter").value;
+    const selectedDate = $("#sales-date-filter").value;
+    const date = selectedDate || localDateKey();
     const reportSales = salesByCategory(sales);
     const label = $("#daily-report-date");
     const daySelect = $("#daily-report-day-select");
@@ -397,14 +458,6 @@ function renderDailyReport(sales) {
       ));
     });
     daySelect.value = date;
-
-    if (!date) {
-      label.textContent = "Choose a date to view its daily report.";
-      $("#daily-report-total").textContent = "—";
-      $("#daily-report-bills").textContent = "—";
-      $("#daily-report-items").textContent = "—";
-      return;
-    }
 
     const daySales = reportSales.filter((sale) => sale.date === date);
     label.textContent = `Daily report for ${formatDate(date)}`;
@@ -1065,6 +1118,11 @@ function setPage(page, { updateHistory = true } = {}) {
     document.querySelector('input[name="billing-mode"][value="standard"]').checked = true;
     $("#manual-amount").value = "";
     $("#manual-remarks").value = "";
+    $("#billing-expense-amount").value = "";
+    $("#billing-expense-category").value = "";
+    $("#billing-expense-description").value = "";
+    $("#billing-goldmedal-amount").value = "";
+    $("#billing-goldmedal-remarks").value = "";
     updateBillingModeUI();
     $("#bill-message").textContent = "";
     $("#bill-message").classList.remove("error");
@@ -1157,6 +1215,7 @@ async function enterApp() {
   $("#profile-avatar").textContent = (account.name || "S").slice(0, 1).toUpperCase();
   $("#dashboard-greeting").textContent = `Welcome back, ${account.name}.`;
   $("#header-date").textContent = new Date().toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short", day: "numeric", month: "short",
   });
   if (!PROJECTS[activeProject].pages.includes(currentPage)) {
@@ -1284,7 +1343,32 @@ async function handlePasswordReset(event) {
 }
 
 function updateBillTotal() {
-  const manualMode = getManualBillingMode();
+  const mode = $('input[name="billing-mode"]:checked').value;
+  const manualMode = mode === "manual";
+  const expenseMode = mode === "expense";
+  const goldmedalMode = mode === "goldmedal";
+  if (goldmedalMode) {
+    const parsedAmount = Number($("#billing-goldmedal-amount").value);
+    const remarks = $("#billing-goldmedal-remarks").value.trim();
+    const validAmount = $("#billing-goldmedal-amount").value.trim() !== ""
+      && Number.isSafeInteger(parsedAmount)
+      && parsedAmount > 0;
+    $("#save-bill").disabled = !(validAmount && remarks.length > 0 && remarks.length <= 300);
+    $("#print-bill-button").disabled = true;
+    $("#bill-total").textContent = validAmount ? formatCurrency(parsedAmount) : "—";
+    return null;
+  }
+  if (expenseMode) {
+    const parsedAmount = Number($("#billing-expense-amount").value);
+    const validAmount = $("#billing-expense-amount").value.trim() !== ""
+      && Number.isSafeInteger(parsedAmount)
+      && parsedAmount > 0;
+    const validCategory = Boolean($("#billing-expense-category").value);
+    $("#save-bill").disabled = !(validAmount && validCategory);
+    $("#print-bill-button").disabled = true;
+    $("#bill-total").textContent = validAmount ? formatCurrency(parsedAmount) : "—";
+    return null;
+  }
   const field = manualMode ? $("#manual-amount") : $("#item-quantity");
   const parsed = Number(field.value);
   const quantity = manualMode ? 1 : parsed;
@@ -1306,26 +1390,59 @@ function getManualBillingMode() {
 }
 
 function updateBillingModeUI() {
-  const manualMode = getManualBillingMode();
+  const mode = $('input[name="billing-mode"]:checked').value;
+  const manualMode = mode === "manual";
+  const expenseMode = mode === "expense";
+  const goldmedalMode = mode === "goldmedal";
   $("#quantity-entry").classList.toggle("hidden", manualMode);
   $("#manual-amount-entry").classList.toggle("hidden", !manualMode);
-  $("#fixed-price").innerHTML = manualMode ? "Custom <small>amount</small>" : "₹99 <small>/ item</small>";
-  $("#product-thumbnail").textContent = manualMode ? "₹" : "99";
-  $("#product-name").textContent = manualMode ? "Manual bill" : "99 Mall item";
-  $("#product-description").textContent = manualMode
-    ? "Custom total · remarks required"
-    : "Standard price · ₹99 each";
-  $("#product-price").textContent = manualMode ? "Custom" : "₹99";
+  $("#quantity-entry").classList.toggle("hidden", manualMode || expenseMode || goldmedalMode);
+  $("#billing-expense-entry").classList.toggle("hidden", !expenseMode);
+  $("#billing-goldmedal-entry").classList.toggle("hidden", !goldmedalMode);
+  $("#fixed-price").innerHTML = goldmedalMode
+    ? "Goldmedal"
+    : expenseMode
+    ? "Outgoing"
+    : manualMode ? "Custom <small>amount</small>" : "₹99 <small>/ item</small>";
+  $("#product-thumbnail").textContent = goldmedalMode || expenseMode || manualMode ? "₹" : "99";
+  $("#product-name").textContent = goldmedalMode
+    ? "Goldmedal Electrical"
+    : expenseMode ? "Miscellaneous expense" : manualMode ? "Manual bill" : "99 Mall item";
+  $("#product-description").textContent = goldmedalMode
+    ? "Goldmedal bill · remarks required"
+    : expenseMode
+    ? "Expense total · category required"
+    : manualMode ? "Custom total · remarks required" : "Standard price · ₹99 each";
+  $("#product-price").textContent = goldmedalMode ? "Goldmedal" : expenseMode ? "Expense" : manualMode ? "Custom" : "₹99";
+  $("#save-bill").innerHTML = goldmedalMode
+    ? 'Save bill <span>→</span>'
+    : expenseMode ? 'Save expense <span>→</span>' : 'Save bill <span>→</span>';
+  $("#print-bill-button").classList.toggle("hidden", expenseMode || goldmedalMode);
 }
 
 async function loadSales() {
   try {
     const snapshot = await getDocs(collection(db, "sales"));
-    sales = snapshot.docs.map((saleDoc) => ({
-      ...saleDoc.data(),
-      firestoreId: saleDoc.id,
-      id: saleDoc.data().id || saleDoc.id,
-    })).sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
+    sales = snapshot.docs.map((saleDoc) => {
+      const data = saleDoc.data();
+      const millis = createdAtMillis(data.createdAt);
+      const createdDate = millis ? new Date(millis) : null;
+      const timeParts = createdDate
+        ? Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            hourCycle: "h23",
+          }).formatToParts(createdDate).map((part) => [part.type, part.value]))
+        : null;
+      return {
+        ...data,
+        firestoreId: saleDoc.id,
+        id: data.id || saleDoc.id,
+        date: createdDate ? localDateKey(createdDate) : data.date,
+        time: timeParts ? `${timeParts.hour}:${timeParts.minute}` : data.time,
+      };
+    }).sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
     clearDataLoadError("sales");
   } catch (error) {
     console.error("Could not load sales:", error);
@@ -1337,10 +1454,16 @@ async function loadSales() {
 async function loadExpenses() {
   try {
     const snapshot = await getDocs(collection(db, "expenses"));
-    expenses = snapshot.docs.map((expenseDoc) => ({
-      ...expenseDoc.data(),
-      firestoreId: expenseDoc.id,
-    })).sort((a, b) => {
+    expenses = snapshot.docs.map((expenseDoc) => {
+      const data = expenseDoc.data();
+      const millis = createdAtMillis(data.createdAt);
+      const createdDate = millis ? new Date(millis) : null;
+      return {
+        ...data,
+        firestoreId: expenseDoc.id,
+        date: createdDate ? localDateKey(createdDate) : data.date,
+      };
+    }).sort((a, b) => {
       if (a.date !== b.date) return String(b.date).localeCompare(String(a.date));
       return createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt);
     });
@@ -1355,11 +1478,17 @@ async function loadExpenses() {
 async function loadGoldmedalSales() {
   try {
     const snapshot = await getDocs(collection(db, "goldmedal_sales"));
-    goldmedalSales = snapshot.docs.map((saleDoc) => ({
-      ...saleDoc.data(),
-      firestoreId: saleDoc.id,
-      id: saleDoc.data().id || saleDoc.id,
-    })).sort((a, b) => {
+    goldmedalSales = snapshot.docs.map((saleDoc) => {
+      const data = saleDoc.data();
+      const millis = createdAtMillis(data.createdAt);
+      const createdDate = millis ? new Date(millis) : null;
+      return {
+        ...data,
+        firestoreId: saleDoc.id,
+        id: data.id || saleDoc.id,
+        date: createdDate ? localDateKey(createdDate) : data.date,
+      };
+    }).sort((a, b) => {
       if (a.date !== b.date) return String(b.date).localeCompare(String(a.date));
       return createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt);
     });
@@ -1418,6 +1547,102 @@ async function saveGoldmedalBill(event) {
     message.classList.add("error");
   } finally {
     button.disabled = false;
+  }
+}
+
+async function saveBillingGoldmedal() {
+  const amount = Number($("#billing-goldmedal-amount").value);
+  const remarks = $("#billing-goldmedal-remarks").value.trim();
+  const button = $("#save-bill");
+  const message = $("#bill-message");
+  message.textContent = "";
+  message.classList.remove("error");
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    message.textContent = "Enter a whole Goldmedal bill amount greater than zero.";
+    message.classList.add("error");
+    return;
+  }
+  if (!remarks) {
+    message.textContent = "Enter remarks for this Goldmedal bill.";
+    message.classList.add("error");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    const now = new Date();
+    await addDoc(collection(db, "goldmedal_sales"), {
+      ownerId: SHARED_STORE_ID,
+      id: `BILL-${now.getTime().toString().slice(-8)}`,
+      billNumber: `BILL-${now.getTime().toString().slice(-8)}`,
+      quantity: 1,
+      unitPrice: amount,
+      remarks,
+      total: amount,
+      date: localDateKey(now),
+      time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      createdAt: serverTimestamp(),
+    });
+    $("#billing-goldmedal-amount").value = "";
+    $("#billing-goldmedal-remarks").value = "";
+    await loadGoldmedalSales();
+    renderGoldmedalSales();
+    renderGoldmedalReports();
+    updateBillTotal();
+    message.textContent = `Goldmedal bill saved for ${formatCurrency(amount)}.`;
+  } catch (error) {
+    console.error("Could not save inline Goldmedal bill:", error);
+    message.textContent = firestoreActionError("Could not save Goldmedal bill", error);
+    message.classList.add("error");
+  } finally {
+    updateBillTotal();
+  }
+}
+
+async function saveBillingExpense() {
+  const amount = Number($("#billing-expense-amount").value);
+  const category = $("#billing-expense-category").value;
+  const description = $("#billing-expense-description").value.trim();
+  const button = $("#save-bill");
+  const message = $("#bill-message");
+  message.textContent = "";
+  message.classList.remove("error");
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    message.textContent = "Enter a whole expense amount greater than zero.";
+    message.classList.add("error");
+    return;
+  }
+  if (!category) {
+    message.textContent = "Choose an expense category.";
+    message.classList.add("error");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await addDoc(collection(db, "expenses"), {
+      ownerId: SHARED_STORE_ID,
+      amount,
+      category,
+      date: localDateKey(),
+      description,
+      createdAt: serverTimestamp(),
+    });
+    $("#billing-expense-amount").value = "";
+    $("#billing-expense-category").value = "";
+    $("#billing-expense-description").value = "";
+    await loadExpenses();
+    renderExpenses();
+    updateBillTotal();
+    message.textContent = `Expense saved for ${formatCurrency(amount)}.`;
+  } catch (error) {
+    console.error("Could not save inline expense:", error);
+    message.textContent = firestoreActionError("Could not save expense", error);
+    message.classList.add("error");
+  } finally {
+    updateBillTotal();
   }
 }
 
@@ -1661,6 +1886,14 @@ $("#manual-remarks").addEventListener("input", () => {
   $("#print-bill-button").textContent = "Save & Print";
   updateBillTotal();
 });
+["#billing-expense-amount", "#billing-expense-category", "#billing-expense-description"].forEach((selector) => {
+  $(selector).addEventListener("input", updateBillTotal);
+  $(selector).addEventListener("change", updateBillTotal);
+});
+["#billing-goldmedal-amount", "#billing-goldmedal-remarks"].forEach((selector) => {
+  $(selector).addEventListener("input", updateBillTotal);
+  $(selector).addEventListener("change", updateBillTotal);
+});
 document.querySelectorAll('input[name="billing-mode"]').forEach((input) => {
   input.addEventListener("change", () => {
     updateBillingModeUI();
@@ -1672,13 +1905,24 @@ document.querySelectorAll('input[name="billing-mode"]').forEach((input) => {
 $("#quantity-minus").addEventListener("click", () => adjustQuantity("item-quantity", -1));
 $("#quantity-plus").addEventListener("click", () => adjustQuantity("item-quantity", 1));
 
-$("#save-bill").addEventListener("click", () => createBill({
-  inputId: "item-quantity",
-  totalId: "bill-total",
-  buttonId: "save-bill",
-  messageId: "bill-message",
-  showSavedDialog: true,
-}));
+$("#save-bill").addEventListener("click", () => {
+  const mode = $('input[name="billing-mode"]:checked').value;
+  if (mode === "goldmedal") {
+    saveBillingGoldmedal();
+    return;
+  }
+  if (mode === "expense") {
+    saveBillingExpense();
+    return;
+  }
+  createBill({
+    inputId: "item-quantity",
+    totalId: "bill-total",
+    buttonId: "save-bill",
+    messageId: "bill-message",
+    showSavedDialog: true,
+  });
+});
 $("#print-bill-button").addEventListener("click", () => {
   if (!billPendingSave) {
     window.print();
@@ -1696,6 +1940,20 @@ $("#print-bill-button").addEventListener("click", () => {
 $("#sales-date-filter").addEventListener("input", refreshDateReport);
 $("#bill-search-input").addEventListener("input", refreshDateReport);
 $("#sales-category-filter").addEventListener("change", updateDashboard);
+async function refreshLiveSalesReport() {
+  if (appScreen.classList.contains("hidden")) return;
+  await loadSales();
+  await loadExpenses();
+  await loadGoldmedalSales();
+  updateDashboard();
+  renderExpenses();
+  renderGoldmedalSales();
+}
+window.addEventListener("focus", refreshLiveSalesReport);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshLiveSalesReport();
+});
+window.setInterval(refreshLiveSalesReport, 60000);
 $("#delete-password-cancel").addEventListener("click", () => {
   $("#delete-password-dialog").close("cancel");
 });

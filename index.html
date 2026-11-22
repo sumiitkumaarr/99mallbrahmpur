@@ -67,15 +67,15 @@
     <main id="app-screen" class="app-screen hidden">
       <aside class="sidebar">
         <a class="brand brand-dark sidebar-brand" href="#"><span class="brand-mark">99</span><span>99<span class="brand-muted">mall</span></span></a>
-        <div class="store-chip"><span class="store-avatar">9</span><span><strong id="store-name">My store</strong><small>Store workspace</small></span><span class="chip-dot"></span></div>
+        <div class="store-chip"><span id="store-avatar" class="store-avatar">9</span><span><strong id="store-name">99 Mall</strong><small>Store workspace</small></span><span class="chip-dot"></span></div>
         <span class="nav-label">WORKSPACE</span>
         <nav class="main-nav" aria-label="Main navigation">
-          <button class="nav-item active" type="button" data-page="billing" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
-          <button class="nav-item" type="button" data-page="sales" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
-          <button class="nav-item" type="button" data-page="goldmedal" aria-label="Goldmedal Electrical"><span class="nav-icon" aria-hidden="true">G</span>Goldmedal</button>
-          <button class="nav-item" type="button" data-page="expenses" aria-label="Miscellaneous expenses"><span class="nav-icon" aria-hidden="true">₹</span>Misc. expenses</button>
+          <button class="nav-item active" type="button" data-page="billing" data-project="99mall" aria-label="New bill"><span class="nav-icon" aria-hidden="true">＋</span>New bill<span class="nav-shortcut">B</span></button>
+          <button class="nav-item" type="button" data-page="sales" data-project="99mall" aria-label="Sales and reports"><span class="nav-icon" aria-hidden="true">▤</span>Sales &amp; reports</button>
+          <button class="nav-item goldmedal-nav-item" type="button" data-page="goldmedal" data-project="aimur-goldmedal" aria-label="Aimur Goldmedal"><span class="nav-icon" aria-hidden="true">G</span>Goldmedal</button>
+          <button class="nav-item" type="button" data-page="expenses" data-project="99mall" aria-label="Miscellaneous expenses"><span class="nav-icon" aria-hidden="true">₹</span>Misc. expenses</button>
         </nav>
-        <div class="sidebar-bottom">
+        <div class="sidebar-bottom" data-project="99mall">
           <div class="help-card"><span class="help-spark">✳</span><strong>₹99 standard, manual option</strong><p>Quick quantity billing or enter another item's price.</p></div>
         </div>
       </aside>
@@ -83,10 +83,16 @@
         <header class="topbar">
           <div class="breadcrumb">
             <button id="back-button" class="back-button" type="button" aria-label="Go back to previous page" disabled><span aria-hidden="true">←</span><span>Back</span></button>
-            <button class="workspace-link" type="button" data-page="billing">Workspace</button>
+            <span id="workspace-link" class="workspace-link">99 Mall</span>
             <span class="crumb-separator">/</span>
             <strong id="page-breadcrumb">New bill</strong>
           </div>
+          <label class="project-switcher">
+            <select id="project-switcher" aria-label="Select project">
+              <option value="99mall">99 Mall</option>
+              <option value="aimur-goldmedal">Aimur Goldmedal</option>
+            </select>
+          </label>
           <div class="topbar-right">
             <span id="header-date" class="header-date"></span>
             <button id="profile-avatar" class="profile-avatar" type="button" aria-label="Open account details" aria-haspopup="dialog" aria-controls="profile-dialog">S</button>
@@ -96,6 +102,7 @@
             </div>
           </div>
         </header>
+        <div id="data-load-warning" class="data-load-warning hidden" role="alert" aria-live="assertive"></div>
         <div class="page-content">
           <section id="billing-page" class="page-section hidden">
             <section class="dashboard-welcome" aria-labelledby="dashboard-greeting">
@@ -129,12 +136,12 @@
                   <label><input name="billing-mode" type="radio" value="manual" /> Manual amount</label>
                 </fieldset>
                 <div class="billing-quick-links" aria-label="Other entry types">
-                  <button class="billing-quick-link" type="button" data-page="expenses">
+                  <button class="billing-quick-link" type="button" data-page="expenses" data-project="99mall">
                     <span class="billing-quick-icon expense-quick-icon" aria-hidden="true">₹</span>
                     <span class="billing-quick-copy"><strong>Misc. expenses</strong><small>Record an expense</small></span>
                     <span class="billing-quick-arrow" aria-hidden="true">→</span>
                   </button>
-                  <button class="billing-quick-link" type="button" data-page="goldmedal">
+                  <button class="billing-quick-link" type="button" data-page="goldmedal" data-project="aimur-goldmedal">
                     <span class="billing-quick-icon goldmedal-quick-icon" aria-hidden="true">G</span>
                     <span class="billing-quick-copy"><strong>Goldmedal</strong><small>Add a Goldmedal bill</small></span>
                     <span class="billing-quick-arrow" aria-hidden="true">→</span>
@@ -297,6 +304,40 @@
                 <article class="stat-card"><div class="stat-top"><span>Total</span><span class="stat-icon icon-mint">↗</span></div><strong id="expense-total">₹0</strong><div class="stat-foot"><span id="expense-total-count">0 expenses</span></div></article>
               </section>
             </div>
+            <section class="panel expense-list-panel">
+              <div class="panel-heading expense-list-heading">
+                <div><h2>Expense records</h2><p id="expense-list-subtitle">All recorded expenses</p></div>
+                <div class="expense-date-controls">
+                  <label class="bill-search-label" for="expense-search-input"><span>Search</span><input id="expense-search-input" type="search" placeholder="Category or remarks" autocomplete="off" /></label>
+                  <label class="expense-date-filter"><span>Date</span><input id="expense-date-filter" type="date" /></label>
+                  <button id="clear-expense-filter" class="date-shortcut" type="button">All</button>
+                </div>
+              </div>
+              <div id="expenses-table-wrap" class="sales-table-wrap"></div>
+            </section>
+          </section>
+          <section id="goldmedal-page" class="page-section hidden">
+            <div class="page-heading heading-row">
+              <div><span class="eyebrow">GOLDMEDAL ELECTRICAL</span><h1>Goldmedal billing<span class="heading-period">.</span></h1><p>Separate manual billing for Goldmedal Electrical.</p></div>
+            </div>
+            <div class="expense-layout">
+              <section class="panel expense-form-panel">
+                <div class="panel-heading"><div><h2>Add Goldmedal bill</h2><p>Enter the amount and remarks; the date is saved automatically</p></div></div>
+                <form id="goldmedal-form" class="expense-form">
+                  <div class="expense-form-grid goldmedal-form-grid">
+                    <label>Amount (₹)<input id="goldmedal-amount" name="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="1500" required /></label>
+                  </div>
+                  <label>Remarks <span>(required)</span><textarea id="goldmedal-remarks" name="remarks" rows="3" maxlength="300" placeholder="Customer or item details" required></textarea></label>
+                  <button id="save-goldmedal-button" class="button button-primary" type="submit">Save bill <span>→</span></button>
+                  <p id="goldmedal-message" class="expense-message" aria-live="polite"></p>
+                </form>
+              </section>
+              <section class="expense-summary goldmedal-summary">
+                <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="goldmedal-today">₹0</strong><div class="stat-foot"><span id="goldmedal-today-count">0 bills</span></div></article>
+                <article class="stat-card"><div class="stat-top"><span>This month</span><span class="stat-icon icon-lilac">▦</span></div><strong id="goldmedal-month">₹0</strong><div class="stat-foot"><span id="goldmedal-month-count">0 bills</span></div></article>
+                <article class="stat-card"><div class="stat-top"><span>Total</span><span class="stat-icon icon-mint">↗</span></div><strong id="goldmedal-total">₹0</strong><div class="stat-foot"><span id="goldmedal-total-count">0 bills</span></div></article>
+              </section>
+            </div>
             <section class="panel daily-report-panel goldmedal-daily-panel">
               <div class="panel-heading daily-report-heading">
                 <div><h2>Goldmedal daily report</h2><p id="goldmedal-daily-report-date">Choose a date to view its report.</p></div>
@@ -320,41 +361,6 @@
               </div>
               <div id="goldmedal-sales-chart" class="daily-sales-chart" role="img" aria-label="Goldmedal daily sales bar chart"></div>
             </section>
-            <section class="panel expense-list-panel">
-              <div class="panel-heading expense-list-heading">
-                <div><h2>Expense records</h2><p id="expense-list-subtitle">All recorded expenses</p></div>
-                <div class="expense-date-controls">
-                  <label class="bill-search-label" for="expense-search-input"><span>Search</span><input id="expense-search-input" type="search" placeholder="Category or remarks" autocomplete="off" /></label>
-                  <label class="expense-date-filter"><span>Date</span><input id="expense-date-filter" type="date" /></label>
-                  <button id="clear-expense-filter" class="date-shortcut" type="button">All</button>
-                </div>
-              </div>
-              <div id="expenses-table-wrap" class="sales-table-wrap"></div>
-            </section>
-          </section>
-          <section id="goldmedal-page" class="page-section hidden">
-            <div class="page-heading heading-row">
-              <div><span class="eyebrow">GOLDMEDAL ELECTRICAL</span><h1>Goldmedal billing<span class="heading-period">.</span></h1><p>Separate manual billing for Goldmedal Electrical.</p></div>
-            </div>
-            <div class="expense-layout">
-              <section class="panel expense-form-panel">
-                <div class="panel-heading"><div><h2>Add Goldmedal bill</h2><p>Enter the bill amount and remarks</p></div></div>
-                <form id="goldmedal-form" class="expense-form">
-                  <div class="expense-form-grid goldmedal-form-grid">
-                    <label>Amount (₹)<input id="goldmedal-amount" name="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="1500" required /></label>
-                    <label>Date<input id="goldmedal-date" name="date" type="date" required /></label>
-                  </div>
-                  <label>Remarks <span>(required)</span><textarea id="goldmedal-remarks" name="remarks" rows="3" maxlength="300" placeholder="Customer or item details" required></textarea></label>
-                  <button id="save-goldmedal-button" class="button button-primary" type="submit">Save bill <span>→</span></button>
-                  <p id="goldmedal-message" class="expense-message" aria-live="polite"></p>
-                </form>
-              </section>
-              <section class="expense-summary goldmedal-summary">
-                <article class="stat-card stat-highlight"><div class="stat-top"><span>Today</span><span class="stat-icon">₹</span></div><strong id="goldmedal-today">₹0</strong><div class="stat-foot"><span id="goldmedal-today-count">0 bills</span></div></article>
-                <article class="stat-card"><div class="stat-top"><span>This month</span><span class="stat-icon icon-lilac">▦</span></div><strong id="goldmedal-month">₹0</strong><div class="stat-foot"><span id="goldmedal-month-count">0 bills</span></div></article>
-                <article class="stat-card"><div class="stat-top"><span>Total</span><span class="stat-icon icon-mint">↗</span></div><strong id="goldmedal-total">₹0</strong><div class="stat-foot"><span id="goldmedal-total-count">0 bills</span></div></article>
-              </section>
-            </div>
             <section class="panel expense-list-panel">
               <div class="panel-heading expense-list-heading">
                 <div><h2>Goldmedal bills</h2><p id="goldmedal-list-subtitle">All Goldmedal records</p></div>

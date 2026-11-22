@@ -92,6 +92,7 @@ button { cursor: pointer; }
 .nav-item { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 43px; border: 0; border-radius: 8px; padding: 0 11px; background: transparent; color: #73747f; text-align: left; font-size: 12px; font-weight: 600; }
 .nav-item:hover { background: #f8f7fc; color: #5040a0; }
 .nav-item.active { background: #f1edff; color: #6246d3; }
+.goldmedal-nav-item { display: flex; }
 .nav-icon { display: grid; width: 17px; place-items: center; font-size: 17px; }
 .nav-shortcut { margin-left: auto; border: 1px solid #e9e7ef; border-radius: 4px; padding: 2px 6px; color: #9898a2; font-size: 9px; }
 .sidebar-bottom { margin-top: auto; }
@@ -117,8 +118,13 @@ button { cursor: pointer; }
 .back-button:disabled { cursor: default; opacity: .48; }
 .back-button:focus-visible,.workspace-link:focus-visible { outline: 3px solid #6296d588; outline-offset: 2px; }
 .crumb-separator { color: #c9c8d0; }
+.project-switcher { min-width: 0; }
+.project-switcher select { width: 100%; max-width: 190px; min-height: 40px; border: 1px solid #d8e2ee; border-radius: 10px; padding: 0 30px 0 12px; background: linear-gradient(135deg, #fff, #f3f7fc); color: #3e5b7f; font-size: 11px; font-weight: 700; }
+.project-switcher select:focus-visible { outline: 3px solid #6296d588; outline-offset: 2px; }
+.app-screen[data-project="aimur-goldmedal"] .main-nav { grid-template-columns: 1fr; }
 .topbar-right { display: flex; align-items: center; gap: 17px; }
 .header-date { color: #81818c; font-size: 10px; }
+.data-load-warning { margin: 14px 5.2% -22px; border: 1px solid #e8c68a; border-radius: 12px; padding: 12px 15px; background: #fff8e9; color: #79551d; font-size: 12px; line-height: 1.5; }
 .profile-avatar { width: 31px; height: 31px; border-radius: 50%; background: #e8f4ef; color: #35835f; font-size: 11px; }
 .page-content { width: min(1180px, 100%); margin: 0 auto; padding: 38px 5.2% 20px; }
 .page-heading { margin-bottom: 26px; }
@@ -260,7 +266,7 @@ button { cursor: pointer; }
 .expense-date-filter input { height: 34px; border: 1px solid #e3dfec; border-radius: 8px; padding: 0 8px; color: #494852; font-size: 11px; }
 .expense-table { min-width: 620px; }
 .delete-expense-button { min-height: 32px; padding: 0 10px; font-size: 11px; }
-.goldmedal-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.goldmedal-form-grid { grid-template-columns: 1fr; }
 .goldmedal-summary .stat-card { min-height: 112px; }
 .delete-goldmedal-button { min-height: 32px; padding: 0 10px; font-size: 11px; }
 
@@ -384,6 +390,7 @@ button { cursor: pointer; }
   .sidebar { position: fixed; z-index: 20; top: auto; right: 0; bottom: 0; left: 0; display: block; width: 100%; height: auto; border: 0; border-top: 1px solid #e9e7ef; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); background: #ffffffed; box-shadow: 0 -8px 28px #28223d0d; backdrop-filter: blur(14px); }
   .sidebar-brand,.store-chip,.nav-label,.sidebar-bottom { display: none; }
   .main-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .goldmedal-nav-item { display: flex; }
   .nav-item { min-height: 52px; flex-direction: column; justify-content: center; gap: 3px; border-radius: 11px; padding: 5px 8px; font-size: 11px; }
   .nav-item.active { background: #f1edff; }
   .nav-icon { width: auto; font-size: 18px; line-height: 1; }
@@ -394,8 +401,10 @@ button { cursor: pointer; }
   .back-button,.workspace-link { gap: 4px; padding: 5px 6px; font-size: 10px; }
   .header-date { font-size: 9px; }
   .topbar-right { gap: 9px; }
+  .data-load-warning { margin: 12px 15px -12px; padding: 11px 12px; font-size: 11px; }
   .logout-button { height: 36px; gap: 6px; border-radius: 9px; padding: 0 10px; font-size: 11px; }
   .logout-button span { font-size: 15px; }
+  .expense-form .button { width: 100%; min-height: 48px; }
   .page-content { padding: 24px 15px calc(24px + env(safe-area-inset-bottom)); }
   .page-heading h1 { font-size: clamp(24px, 7vw, 30px); }
   .heading-row { display: block; }
@@ -444,6 +453,8 @@ button { cursor: pointer; }
   .daily-report-stats article { min-width: 0; gap: 6px; padding: 10px 8px; }
   .daily-report-stats article span { font-size: 9px; }
   .daily-report-stats article strong { overflow-wrap: anywhere; font-size: 16px; }
+  .goldmedal-daily-panel .daily-report-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .daily-report-shortcuts .date-shortcut { min-height: 40px; }
   .sales-chart-panel { padding: 16px 12px 14px; }
   .daily-sales-chart { height: 190px; min-height: 190px; gap: 5px; padding-right: 0; padding-left: 0; }
   .bar-chart-column { grid-template-rows: 20px minmax(85px, 1fr) 18px 18px; gap: 3px; }
@@ -451,6 +462,7 @@ button { cursor: pointer; }
   .bar-chart-weekday { font-size: 10px; }
   .bar-chart-date { font-size: 9px; }
   .sales-table th,.sales-table td { padding: 10px 7px; font-size: 10px; }
+  .sales-table .button { min-height: 36px; }
   .expense-layout { grid-template-columns: 1fr; }
   .expense-form-panel { padding: 16px 13px; }
   .expense-form-grid { grid-template-columns: 1fr; }
@@ -465,9 +477,18 @@ button { cursor: pointer; }
   .expense-date-filter { min-width: 130px; }
   .confirmation-dialog { max-width: calc(100% - 28px); }
 }
+@media (min-width: 681px) and (max-width: 850px) {
+  .header-date,.workspace-link,.crumb-separator { display: none; }
+  .project-switcher select { max-width: 145px; }
+}
 @media (max-width: 380px) {
   .page-content { padding-right: 12px; padding-left: 12px; }
   .header-date { display: none; }
+  .workspace-link,.crumb-separator,.back-button span:last-child { display: none; }
+  .back-button { width: 34px; min-height: 34px; justify-content: center; padding: 0; }
+  .logout-button { width: 36px; justify-content: center; padding: 0; font-size: 0; }
+  .nav-item { padding-right: 2px; padding-left: 2px; font-size: 10px; }
+  #billing-page .billing-quick-links { grid-template-columns: 1fr; }
   .report-heading-actions { gap: 7px; }
   .report-heading-actions .button { font-size: 10px; }
   #billing-page .billing-report-preview { padding-right: 12px; padding-left: 12px; }
@@ -476,6 +497,22 @@ button { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+@media (max-width: 380px) {
+  .topbar { gap: 5px; padding-right: 10px; padding-left: 10px; }
+  .project-switcher select { max-width: 116px; padding-right: 22px; }
+  #page-breadcrumb { max-width: 58px; font-size: 9px; }
+}
+@media (max-width: 680px) {
+  .app-screen[data-project="99mall"] .main-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .app-screen[data-project="aimur-goldmedal"] .main-nav { grid-template-columns: 1fr; }
+  .project-switcher select { max-width: 125px; min-height: 40px; padding-left: 9px; font-size: 10px; }
+  .topbar { gap: 7px; }
+  .breadcrumb { min-width: 0; gap: 5px; }
+  .workspace-link,.crumb-separator,.back-button span:last-child,.header-date { display: none; }
+  .back-button { width: 34px; min-height: 34px; justify-content: center; padding: 0; }
+  #page-breadcrumb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-right { flex: 0 0 auto; }
 }
 
 body { background: radial-gradient(ellipse at 82% 0, #e7edf6 0, transparent 36%), radial-gradient(ellipse at 4% 76%, #edf1f7 0, transparent 34%), var(--canvas); }

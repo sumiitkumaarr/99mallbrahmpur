@@ -1,6 +1,6 @@
-# 99mallbrahmpur
+# 99 Mall & Aimur Goldmedal
 
-A lightweight, single-store billing app for a shop where every item costs ₹99.
+A lightweight billing app with separate 99 Mall and Aimur Goldmedal workspaces.
 
 ## Run locally
 
@@ -18,11 +18,14 @@ The app connects directly to Firebase from the browser.
 - Only `sumiitkumar.it@gmail.com` and `amiitkumar.it@gmail.com` are allowed to sign in.
 - Firestore stores account records in `accounts/{uid}`.
 - Firestore stores sales in the shared `sales` collection. Both allowed email accounts see, add, and clear the same bills; legacy bills are moved to the shared store ID when the app loads.
+- Use the project selector in the header to switch workspaces without signing in again. 99 Mall shows its billing, sales, and expenses; Aimur Goldmedal shows its separate Goldmedal bills and reports. The workspaces use the same Firebase project and login but separate Firestore collections.
 - Standard bills are validated at ₹99 per item, while manual bills can use any positive whole-rupee amount.
 - Manual bills require a reason (up to 300 characters); remarks are saved with the bill and shown in the sales table and printed receipt.
+- Goldmedal bills use the `goldmedal_sales` collection; their date and time are recorded automatically when saved, and remarks are required.
 - Either allowed account can permanently delete an individual bill from the Sales & reports page; totals and reports update after deletion.
 - Either allowed account can clear all sales from the Sales & reports page; login accounts are preserved.
-- Publish the updated `firestore.rules` in Firebase Console after changing access rules.
+- Only the two allowlisted emails can access store data; sales and expense updates are restricted to the legacy-owner migration, and Goldmedal bills are immutable after creation.
+- Changes to `firestore.rules` take effect only after publishing them to the `mallbrahmpur` Firebase project.
 
 ## Build and deploy
 

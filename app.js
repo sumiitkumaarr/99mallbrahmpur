@@ -1,9 +1,3 @@
-const PRICE_PER_ITEM = 99;
-const SHARED_STORE_ID = "99mallbrahmpur";
-const ALLOWED_EMAILS = new Set([
-  "sumiitkumar.it@gmail.com",
-  "amiitkumar.it@gmail.com",
-]);
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import {
   createUserWithEmailAndPassword,
@@ -25,6 +19,40 @@ import {
   deleteDoc,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+
+const PRICE_PER_ITEM = 99;
+const SHARED_STORE_ID = "99mallbrahmpur";
+const ALLOWED_EMAILS = new Set([
+  "sumiitkumar.it@gmail.com",
+  "amiitkumar.it@gmail.com",
+]);
+const PROJECTS = {
+  "99mall": {
+    label: "99 Mall",
+    avatar: "99",
+    defaultPage: "billing",
+    pages: ["billing", "sales", "expenses"],
+    collections: ["sales", "expenses"],
+  },
+  "aimur-goldmedal": {
+    label: "Aimur Goldmedal",
+    avatar: "A",
+    defaultPage: "goldmedal",
+    pages: ["goldmedal"],
+    collections: ["goldmedal_sales"],
+  },
+};
+const PROJECT_STORAGE_KEY = "99mall-active-project";
+
+function getStoredProject() {
+  try {
+    const storedProject = window.localStorage.getItem(PROJECT_STORAGE_KEY);
+    return Object.hasOwn(PROJECTS, storedProject) ? storedProject : "99mall";
+  } catch (error) {
+    console.error("Could not restore the selected project:", error);
+    return "99mall";
+  }
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyAuDGd1B30OhurOb45-XyMDN4-M-2847qo",
@@ -49,11 +77,77 @@ const forms = {
 };
 let currentPage = "billing";
 let pageHistoryIndex = 0;
+let activeProject = getStoredProject();
 let account = null;
 let sales = [];
 let expenses = [];
 let goldmedalSales = [];
 let billPendingSave = true;
+const dataLoadErrors = new Map();
+const dataLoadLabels = {
+  sales: "sales",
+  expenses: "expenses",
+  goldmedal_sales: "Goldmedal sales",
+};
+
+function updateDataLoadWarning() {
+  const warning = $("#data-load-warning");
+  const failures = [...dataLoadErrors.entries()].filter(([name]) =>
+    PROJECTS[activeProject].collections.includes(name)
+  );
+  warning.classList.toggle("hidden", failures.length === 0);
+  if (!failures.length) {
+    warning.textContent = "";
+    return;
+  }
+
+  const collections = failures.map(([name]) => dataLoadLabels[name] || name).join(", ");
+  warning.textContent = failures.some(([, error]) => error.code === "permission-denied")
+    ? `Could not load ${collections}: Firestore denied access. Confirm the signed-in email is allowed and the latest firestore.rules are published.`
+    : `Could not load ${collections}. Check your internet connection and try again.`;
+}
+
+function setDataLoadError(collection, error) {
+  dataLoadErrors.set(collection, error);
+  updateDataLoadWarning();
+}
+
+function clearDataLoadError(collection) {
+  dataLoadErrors.delete(collection);
+  updateDataLoadWarning();
+}
+
+function clearAllDataLoadErrors() {
+  dataLoadErrors.clear();
+  updateDataLoadWarning();
+}
+
+function updateProjectUI() {
+  const project = PROJECTS[activeProject];
+  appScreen.dataset.project = activeProject;
+  $("#project-switcher").value = activeProject;
+  $("#workspace-link").textContent = project.label;
+  $("#store-name").textContent = project.label;
+  $("#store-avatar").textContent = project.avatar;
+  document.querySelectorAll("[data-project]").forEach((element) => {
+    element.classList.toggle("hidden", element.dataset.project !== activeProject);
+  });
+  updateDataLoadWarning();
+}
+
+function persistProject(project) {
+  try {
+    window.localStorage.setItem(PROJECT_STORAGE_KEY, project);
+  } catch (error) {
+    console.error("Could not remember the selected project:", error);
+  }
+}
+
+function firestoreActionError(action, error) {
+  return error.code === "permission-denied"
+    ? `${action} was denied by Firestore. Confirm the signed-in email is allowed and the latest firestore.rules are published.`
+    : `${action} failed: ${error.message}`;
+}
 
 function isAllowedEmail(email) {
   return ALLOWED_EMAILS.has(String(email || "").trim().toLowerCase());
@@ -68,6 +162,8 @@ function authErrorMessage(error) {
     "auth/weak-password": "Password must be at least 6 characters.",
     "auth/invalid-email": "Enter a valid email address.",
     "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "permission-denied": "Firestore denied access. Confirm the signed-in email is allowed and the latest firestore.rules are published.",
+    "unavailable": "Could not reach Firestore. Check your internet connection and try again.",
   };
   return messages[error.code] || "Could not complete the request. Please try again.";
 }
@@ -181,6 +277,22 @@ function salesByCategory(sales) {
 }
 
 function updateDashboard() {
+  if (dataLoadErrors.has("sales")) {
+    [
+      "#report-today", "#report-yesterday", "#report-week", "#report-month",
+      "#billing-report-today", "#billing-report-yesterday", "#billing-report-week", "#billing-report-month",
+    ].forEach((selector) => { $(selector).textContent = "—"; });
+    [
+      "#report-today-count", "#report-yesterday-count", "#report-week-items", "#report-month-count",
+      "#billing-report-today-count", "#billing-report-yesterday-count", "#billing-report-week-items", "#billing-report-month-count",
+    ].forEach((selector) => { $(selector).textContent = "Unavailable"; });
+    $("#billing-recent-sales").innerHTML = '<div class="empty-state">Sales data could not be loaded.</div>';
+    renderSalesTable([]);
+    renderDailyReport([]);
+    renderDailySalesChart([]);
+    return;
+  }
+
   const sortedSales = [...sales].sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
   const reportSales = salesByCategory(sortedSales);
   const summary = salesSummary(reportSales);
@@ -207,6 +319,12 @@ function updateDashboard() {
 }
 
 function renderSalesTable(sales) {
+  if (dataLoadErrors.has("sales")) {
+    $("#sales-subtitle").textContent = "Sales data is unavailable.";
+    $("#sales-table-wrap").innerHTML = '<div class="sales-empty">Sales data could not be loaded.</div>';
+    return;
+  }
+
   const filter = $("#sales-date-filter").value;
   const rawSearch = $("#bill-search-input").value.trim();
   const search = rawSearch.toLowerCase().replace(/[₹,\s]/g, "");
@@ -256,6 +374,14 @@ function renderSalesTable(sales) {
 }
 
 function renderDailyReport(sales) {
+    if (dataLoadErrors.has("sales")) {
+      $("#daily-report-date").textContent = "Sales data is unavailable.";
+      $("#daily-report-total").textContent = "—";
+      $("#daily-report-bills").textContent = "—";
+      $("#daily-report-items").textContent = "—";
+      return;
+    }
+
     const date = $("#sales-date-filter").value;
     const reportSales = salesByCategory(sales);
     const label = $("#daily-report-date");
@@ -321,6 +447,11 @@ function renderDailySalesChart(sales) {
     const rangeEnd = formatDate(days[days.length - 1].key);
     $("#sales-chart-period").textContent = `Daily totals from ${rangeStart} to ${rangeEnd}`;
     const chart = $("#daily-sales-chart");
+    if (dataLoadErrors.has("sales")) {
+      window.echarts?.getInstanceByDom(chart)?.dispose();
+      chart.innerHTML = '<div class="sales-empty">Sales chart is unavailable until the data can be loaded.</div>';
+      return;
+    }
     const labels = days.map((day) =>
       new Intl.DateTimeFormat("en-IN", { weekday: "short" }).format(day.date),
     );
@@ -336,6 +467,7 @@ function renderDailySalesChart(sales) {
       return;
     }
 
+    chart.querySelector(".sales-empty")?.remove();
     const instance = echarts.getInstanceByDom(chart) || echarts.init(chart, null, { renderer: "canvas" });
     instance.setOption({
       animationDuration: 650,
@@ -420,6 +552,18 @@ function renderDailySalesChart(sales) {
 }
 
 function renderExpenses() {
+  if (dataLoadErrors.has("expenses")) {
+    ["#expense-today", "#expense-month", "#expense-total"].forEach((selector) => {
+      $(selector).textContent = "—";
+    });
+    ["#expense-today-count", "#expense-month-count", "#expense-total-count"].forEach((selector) => {
+      $(selector).textContent = "Unavailable";
+    });
+    $("#expense-list-subtitle").textContent = "Expense data is unavailable.";
+    $("#expenses-table-wrap").innerHTML = '<div class="sales-empty">Expense data could not be loaded.</div>';
+    return;
+  }
+
   const today = localDateKey();
   const monthPrefix = today.slice(0, 7);
   const todayExpenses = expenses.filter((expense) => expense.date === today);
@@ -474,6 +618,18 @@ function renderExpenses() {
 }
 
 function renderGoldmedalSales() {
+  if (dataLoadErrors.has("goldmedal_sales")) {
+    ["#goldmedal-today", "#goldmedal-month", "#goldmedal-total"].forEach((selector) => {
+      $(selector).textContent = "—";
+    });
+    ["#goldmedal-today-count", "#goldmedal-month-count", "#goldmedal-total-count"].forEach((selector) => {
+      $(selector).textContent = "Unavailable";
+    });
+    $("#goldmedal-list-subtitle").textContent = "Goldmedal data is unavailable.";
+    $("#goldmedal-table-wrap").innerHTML = '<div class="sales-empty">Goldmedal data could not be loaded.</div>';
+    return;
+  }
+
   const today = localDateKey();
   const monthPrefix = today.slice(0, 7);
   const todaySales = goldmedalSales.filter((sale) => sale.date === today);
@@ -529,6 +685,16 @@ function renderGoldmedalSales() {
 }
 
 function renderGoldmedalReports() {
+  if (dataLoadErrors.has("goldmedal_sales")) {
+    $("#goldmedal-daily-report-date").textContent = "Goldmedal data is unavailable.";
+    $("#goldmedal-daily-total").textContent = "—";
+    $("#goldmedal-daily-bills").textContent = "—";
+    const chart = $("#goldmedal-sales-chart");
+    window.echarts?.getInstanceByDom(chart)?.dispose();
+    chart.innerHTML = '<div class="sales-empty">Goldmedal chart is unavailable until the data can be loaded.</div>';
+    return;
+  }
+
   const selectedDate = $("#goldmedal-daily-date").value;
   const endDate = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
   const daySales = goldmedalSales.filter((sale) => sale.date === selectedDate);
@@ -570,6 +736,7 @@ function renderGoldmedalReports() {
     return;
   }
 
+  chart.querySelector(".sales-empty")?.remove();
   const shortCurrency = new Intl.NumberFormat("en-IN", {
     notation: "compact",
     maximumFractionDigits: 1,
@@ -692,7 +859,7 @@ async function deleteSale(sale, button) {
     status.classList.add("success");
   } catch (error) {
     console.error("Could not delete bill:", error);
-    status.textContent = `Could not delete ${sale.id}: ${error.message}`;
+    status.textContent = firestoreActionError(`Could not delete ${sale.id}`, error);
   } finally {
     button.disabled = false;
   }
@@ -707,7 +874,7 @@ async function deleteSale(sale, button) {
       renderExpenses();
     } catch (error) {
       console.error("Could not delete expense:", error);
-      $("#expense-message").textContent = `Could not delete expense: ${error.message}`;
+      $("#expense-message").textContent = firestoreActionError("Could not delete expense", error);
       $("#expense-message").classList.add("error");
     } finally {
       button.disabled = false;
@@ -738,7 +905,7 @@ async function deleteSale(sale, button) {
       renderGoldmedalReports();
     } catch (error) {
       console.error("Could not delete Goldmedal bill:", error);
-      $("#goldmedal-message").textContent = `Could not delete bill: ${error.message}`;
+      $("#goldmedal-message").textContent = firestoreActionError("Could not delete bill", error);
       $("#goldmedal-message").classList.add("error");
     } finally {
       button.disabled = false;
@@ -779,7 +946,7 @@ async function clearSalesData() {
       status.classList.add("success");
     } catch (error) {
       console.error("Could not clear sales data:", error);
-      status.textContent = `Could not clear all sales data: ${error.message}`;
+      status.textContent = firestoreActionError("Could not clear all sales data", error);
     } finally {
       button.disabled = false;
     }
@@ -897,10 +1064,18 @@ function refreshDateReport() {
 }
 
 function setPage(page, { updateHistory = true } = {}) {
+  if (!PROJECTS[activeProject].pages.includes(page)) {
+    page = PROJECTS[activeProject].defaultPage;
+  }
   if (updateHistory && page !== currentPage) {
     pageHistoryIndex += 1;
     window.history.pushState(
-      { ...(window.history.state || {}), appPage: page, appHistoryIndex: pageHistoryIndex },
+      {
+        ...(window.history.state || {}),
+        appPage: page,
+        appProject: activeProject,
+        appHistoryIndex: pageHistoryIndex,
+      },
       "",
       window.location.href,
     );
@@ -921,12 +1096,11 @@ function setPage(page, { updateHistory = true } = {}) {
     $("#print-bill-button").disabled = bill === null;
   }
   if (page === "goldmedal") {
-    $("#goldmedal-date").value ||= localDateKey();
     $("#goldmedal-daily-date").value ||= localDateKey();
-    renderGoldmedalReports();
   }
   document.querySelectorAll(".page-section").forEach((section) => section.classList.add("hidden"));
   $(`#${page}-page`).classList.remove("hidden");
+  if (page === "goldmedal") renderGoldmedalReports();
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.page === page);
   });
@@ -939,10 +1113,45 @@ function setPage(page, { updateHistory = true } = {}) {
   updateDashboard();
   renderExpenses();
   renderGoldmedalSales();
+  queueChartResize();
   window.scrollTo({
     top: 0,
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
   });
+}
+
+function setProject(project) {
+  if (!Object.hasOwn(PROJECTS, project) || project === activeProject) return;
+  if (
+    activeProject === "99mall"
+    && currentPage === "billing"
+    && billPendingSave
+    && (
+      Number($("#item-quantity").value) !== 1
+      || $("#manual-amount").value.trim()
+      || $("#manual-remarks").value.trim()
+    )
+    && !window.confirm("Switch projects and discard the unsaved 99 Mall bill?")
+  ) {
+    $("#project-switcher").value = activeProject;
+    return;
+  }
+
+  activeProject = project;
+  persistProject(project);
+  updateProjectUI();
+  pageHistoryIndex += 1;
+  window.history.pushState(
+    {
+      ...(window.history.state || {}),
+      appPage: PROJECTS[project].defaultPage,
+      appProject: project,
+      appHistoryIndex: pageHistoryIndex,
+    },
+    "",
+    window.location.href,
+  );
+  setPage(PROJECTS[project].defaultPage, { updateHistory: false });
 }
 
 async function enterApp() {
@@ -959,15 +1168,23 @@ async function enterApp() {
   };
   authScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
-  $("#store-name").textContent = account.name || "My store";
+  updateProjectUI();
   $("#profile-avatar").textContent = (account.name || "S").slice(0, 1).toUpperCase();
   $("#dashboard-greeting").textContent = `Welcome back, ${account.name}.`;
   $("#header-date").textContent = new Date().toLocaleDateString("en-IN", {
     weekday: "short", day: "numeric", month: "short",
   });
+  if (!PROJECTS[activeProject].pages.includes(currentPage)) {
+    currentPage = PROJECTS[activeProject].defaultPage;
+  }
   pageHistoryIndex = 0;
   window.history.replaceState(
-    { ...(window.history.state || {}), appPage: currentPage, appHistoryIndex: pageHistoryIndex },
+    {
+      ...(window.history.state || {}),
+      appPage: currentPage,
+      appProject: activeProject,
+      appHistoryIndex: pageHistoryIndex,
+    },
     "",
     window.location.href,
   );
@@ -980,10 +1197,19 @@ async function enterApp() {
 window.addEventListener("popstate", (event) => {
   const { appPage, appHistoryIndex } = event.state || {};
   if (!["billing", "sales", "expenses", "goldmedal"].includes(appPage)) return;
+  if (Object.hasOwn(PROJECTS, event.state?.appProject)) {
+    activeProject = event.state.appProject;
+    persistProject(activeProject);
+    updateProjectUI();
+  }
   pageHistoryIndex = Number.isInteger(appHistoryIndex) ? appHistoryIndex : 0;
   if (!appScreen.classList.contains("hidden")) {
     setPage(appPage, { updateHistory: false });
   }
+});
+
+$("#project-switcher").addEventListener("change", (event) => {
+  setProject(event.currentTarget.value);
 });
 
 function showFormError(form, message) {
@@ -1002,7 +1228,12 @@ async function handleSetup(event) {
   const form = event.currentTarget;
   const data = new FormData(form);
   const password = String(data.get("password"));
+  const name = String(data.get("name")).trim();
   const email = String(data.get("email")).trim();
+  if (!name || name.length > 60) {
+    showFormError(form, "Enter a store name between 1 and 60 characters.");
+    return;
+  }
   if (!isAllowedEmail(email)) {
     showFormError(form, "This email address is not allowed to create an account.");
     return;
@@ -1017,9 +1248,9 @@ async function handleSetup(event) {
       email,
       password,
     );
-    await updateProfile(credential.user, { displayName: String(data.get("name")).trim() });
+    await updateProfile(credential.user, { displayName: name });
     await setDoc(doc(db, "accounts", credential.user.uid), {
-      name: String(data.get("name")).trim(),
+      name,
       email: credential.user.email,
       ownerId: credential.user.uid,
       createdAt: serverTimestamp(),
@@ -1120,9 +1351,11 @@ async function loadSales() {
       firestoreId: saleDoc.id,
       id: saleDoc.data().id || saleDoc.id,
     })).sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
+    clearDataLoadError("sales");
   } catch (error) {
     console.error("Could not load sales:", error);
     sales = [];
+    setDataLoadError("sales", error);
   }
 }
 
@@ -1146,9 +1379,11 @@ async function loadExpenses() {
       if (a.date !== b.date) return String(b.date).localeCompare(String(a.date));
       return createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt);
     });
+    clearDataLoadError("expenses");
   } catch (error) {
     console.error("Could not load expenses:", error);
     expenses = [];
+    setDataLoadError("expenses", error);
   }
 }
 
@@ -1163,16 +1398,17 @@ async function loadGoldmedalSales() {
       if (a.date !== b.date) return String(b.date).localeCompare(String(a.date));
       return createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt);
     });
+    clearDataLoadError("goldmedal_sales");
   } catch (error) {
     console.error("Could not load Goldmedal sales:", error);
     goldmedalSales = [];
+    setDataLoadError("goldmedal_sales", error);
   }
 }
 
 async function saveGoldmedalBill(event) {
   event.preventDefault();
   const amount = Number($("#goldmedal-amount").value);
-  const date = $("#goldmedal-date").value;
   const remarks = $("#goldmedal-remarks").value.trim();
   const button = $("#save-goldmedal-button");
   const message = $("#goldmedal-message");
@@ -1184,8 +1420,8 @@ async function saveGoldmedalBill(event) {
     message.classList.add("error");
     return;
   }
-  if (!date || !remarks) {
-    message.textContent = "Enter a date and remarks.";
+  if (!remarks) {
+    message.textContent = "Enter remarks for this bill.";
     message.classList.add("error");
     return;
   }
@@ -1193,6 +1429,7 @@ async function saveGoldmedalBill(event) {
   button.disabled = true;
   try {
     const now = new Date();
+    const date = localDateKey(now);
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const billNumber = `GM-${now.getTime().toString().slice(-8)}`;
     await addDoc(collection(db, "goldmedal_sales"), {
@@ -1206,14 +1443,13 @@ async function saveGoldmedalBill(event) {
       createdAt: serverTimestamp(),
     });
     $("#goldmedal-form").reset();
-    $("#goldmedal-date").value = localDateKey();
     await loadGoldmedalSales();
     renderGoldmedalSales();
     renderGoldmedalReports();
     message.textContent = `Goldmedal bill saved for ${formatCurrency(amount)}.`;
   } catch (error) {
     console.error("Could not save Goldmedal bill:", error);
-    message.textContent = `Could not save bill: ${error.message}`;
+    message.textContent = firestoreActionError("Could not save Goldmedal bill", error);
     message.classList.add("error");
   } finally {
     button.disabled = false;
@@ -1258,7 +1494,7 @@ async function saveExpense(event) {
     message.textContent = `Expense saved for ${formatCurrency(amount)}.`;
   } catch (error) {
     console.error("Could not save expense:", error);
-    message.textContent = `Could not save expense: ${error.message}`;
+    message.textContent = firestoreActionError("Could not save expense", error);
     message.classList.add("error");
   } finally {
     button.disabled = false;
@@ -1331,7 +1567,7 @@ async function createBill({
     if (showSavedDialog) showBillSavedDialog(quantity, total);
     if (printAfterSave) window.print();
   } catch (error) {
-    message.textContent = error.message;
+    message.textContent = firestoreActionError("Could not save bill", error);
     message.classList.add("error");
   } finally {
     if (billPendingSave) updateBillTotal();
@@ -1413,6 +1649,7 @@ $("#logout-button").addEventListener("click", async (event) => {
     sales = [];
     expenses = [];
     goldmedalSales = [];
+    clearAllDataLoadErrors();
     account = null;
   } catch (error) {
     console.error("Could not sign out:", error);
@@ -1525,16 +1762,19 @@ $("#clear-expense-filter").addEventListener("click", () => {
   renderExpenses();
 });
 let chartResizeFrame = 0;
-window.addEventListener("resize", () => {
-  window.cancelAnimationFrame(chartResizeFrame);
-  chartResizeFrame = window.requestAnimationFrame(() => {
-    const chart = $("#daily-sales-chart");
-    const instance = window.echarts?.getInstanceByDom(chart);
-    instance?.resize();
-    const goldmedalChart = $("#goldmedal-sales-chart");
-    window.echarts?.getInstanceByDom(goldmedalChart)?.resize();
+function resizeCharts() {
+  const charts = [$("#daily-sales-chart"), $("#goldmedal-sales-chart")];
+  charts.forEach((chart) => {
+    window.echarts?.getInstanceByDom(chart)?.resize();
   });
-});
+}
+
+function queueChartResize() {
+  window.cancelAnimationFrame(chartResizeFrame);
+  chartResizeFrame = window.requestAnimationFrame(resizeCharts);
+}
+
+window.addEventListener("resize", queueChartResize, { passive: true });
 document.addEventListener("keydown", (event) => {
   if ((event.key === "b" || event.key === "B") && !event.target.matches("input,textarea")) {
     if (!appScreen.classList.contains("hidden")) setPage("billing");
@@ -1553,6 +1793,7 @@ onAuthStateChanged(auth, async (user) => {
       sales = [];
       expenses = [];
       goldmedalSales = [];
+      clearAllDataLoadErrors();
       authScreen.classList.remove("hidden");
       appScreen.classList.add("hidden");
       showAuth("login");
@@ -1566,6 +1807,7 @@ onAuthStateChanged(auth, async (user) => {
     expenses = [];
     authScreen.classList.remove("hidden");
     appScreen.classList.add("hidden");
+    clearAllDataLoadErrors();
     showAuth("login");
   }
 });

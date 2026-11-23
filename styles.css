@@ -171,7 +171,7 @@ button { cursor: pointer; }
 .panel-heading p { margin: 4px 0 0; color: #9898a2; font-size: 10px; }
 .panel-heading .text-button span { margin-left: 5px; }
 .recent-sales { margin-top: 14px; }
-.sale-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 18px; min-height: 56px; border-top: 1px solid #f1f0f3; }
+.sale-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto; align-items: center; gap: 18px; min-height: 56px; border-top: 1px solid #f1f0f3; }
 .sale-id { color: #41414b; font-size: 11px; font-weight: 700; }
 .sale-meta { margin-top: 3px; color: #a0a0aa; font-size: 9px; }
 .sale-quantity { color: #83838e; font-size: 10px; }
@@ -1094,7 +1094,7 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
 #billing-page .billing-recent-heading { margin-top: 19px; }
 #billing-page .billing-recent-heading h3 { font-size: 14px; }
 #billing-page .billing-recent-heading span { font-size: 10px; }
-#billing-page .billing-recent-sales .sale-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+#billing-page .billing-recent-sales .sale-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
 #billing-page .billing-recent-sales .sale-quantity { display: none; }
 
 @media (max-width: 1150px) {

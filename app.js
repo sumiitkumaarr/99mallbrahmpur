@@ -344,6 +344,11 @@ function renderSalesList(container, sales) {
         : sale.billType || (sale.manualAmount || sale.billTypeKey === "manual" ? "Manual" : "99 Mall"))} · ${formatDate(sale.date)}${sale.time && !sale.isExpense ? ` · ${formatTime(sale.time)}` : ""}</div></div>
       <span class="sale-quantity">${sale.isExpense ? "Expense" : `${sale.quantity} ${sale.quantity === 1 ? "item" : "items"}`}</span>
       <strong class="sale-amount">${formatCurrency(sale.total)}</strong>
+      ${sale.isExpense
+        ? `<button class="button button-danger delete-expense-button" type="button" data-delete-expense="${escapeHTML(sale.firestoreId)}" aria-label="Delete ${escapeHTML(sale.categoryName || "miscellaneous")} expense">Delete</button>`
+        : sale.category === "goldmedal"
+          ? `<button class="button button-danger delete-goldmedal-button" type="button" data-delete-goldmedal="${escapeHTML(sale.firestoreId)}" aria-label="Delete Goldmedal bill ${escapeHTML(sale.id)}">Delete</button>`
+          : `<button class="button button-danger delete-sale-button" type="button" data-delete-sale="${escapeHTML(sale.firestoreId)}" aria-label="Delete bill ${escapeHTML(sale.id)}">Delete</button>`}
     </article>
   `).join("");
 }
@@ -539,7 +544,7 @@ function renderSalesTable(sales) {
   if (selectedCategory === "goldmedal") {
     container.innerHTML = `
       <table class="sales-table expense-table">
-        <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Remarks</th><th>Amount</th></tr></thead>
+        <thead><tr><th>Bill</th><th>Date</th><th>Time</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
         <tbody>${filtered.map((sale) => `
           <tr>
             <td>${escapeHTML(sale.id)}</td>
@@ -547,6 +552,7 @@ function renderSalesTable(sales) {
             <td>${formatTime(sale.time)}</td>
             <td>${escapeHTML(sale.remarks || "—")}</td>
             <td class="table-amount">${formatCurrency(sale.total)}</td>
+            <td><button class="button button-danger delete-goldmedal-button" type="button" data-delete-goldmedal="${escapeHTML(sale.firestoreId)}" aria-label="Delete Goldmedal bill ${escapeHTML(sale.id)}">Delete</button></td>
           </tr>
         `).join("")}</tbody>
       </table>`;
@@ -1066,7 +1072,9 @@ function confirmDeletePassword() {
 async function deleteSale(sale, button) {
   if (!await confirmBillDeletion(sale, "99 Mall")) return;
   if (!await confirmDeletePassword()) return;
-  const status = $("#delete-bill-message");
+  const status = button.closest("#billing-recent-sales")
+    ? $("#billing-recent-delete-message")
+    : $("#delete-bill-message");
   button.disabled = true;
   status.textContent = "";
   status.classList.remove("success");
@@ -1087,17 +1095,27 @@ async function deleteSale(sale, button) {
 async function deleteGoldmedalSale(sale, button) {
   if (!await confirmGoldmedalDeletion(sale)) return;
   if (!await confirmDeletePassword()) return;
+  const reportList = button.closest("#billing-recent-sales, #sales-table-wrap");
+  const status = reportList
+    ? button.closest("#billing-recent-sales")
+      ? $("#billing-recent-delete-message")
+      : $("#delete-bill-message")
+    : $("#goldmedal-message");
   button.disabled = true;
+  status.textContent = "";
+  status.classList.remove("success", "error");
   try {
     await deleteDoc(doc(db, "goldmedal_sales", sale.firestoreId));
     goldmedalSales = goldmedalSales.filter((item) => item.firestoreId !== sale.firestoreId);
+    updateDashboard();
     renderGoldmedalSales();
     renderGoldmedalReports();
-    $("#goldmedal-message").textContent = `${sale.id} deleted.`;
+    status.textContent = `${sale.id} deleted.`;
+    status.classList.add("success");
   } catch (error) {
     console.error("Could not delete Goldmedal bill:", error);
-    $("#goldmedal-message").textContent = firestoreActionError("Could not delete bill", error);
-    $("#goldmedal-message").classList.add("error");
+    status.textContent = firestoreActionError("Could not delete bill", error);
+    status.classList.add("error");
   } finally {
     button.disabled = false;
   }
@@ -1106,16 +1124,27 @@ async function deleteGoldmedalSale(sale, button) {
 async function deleteExpense(expense, button) {
   const confirmed = await confirmExpenseDeletion(expense);
   if (!confirmed) return;
+  if (!await confirmDeletePassword()) return;
+  const reportList = button.closest("#billing-recent-sales, #sales-table-wrap");
+  const status = reportList
+    ? button.closest("#billing-recent-sales")
+      ? $("#billing-recent-delete-message")
+      : $("#delete-bill-message")
+    : $("#expense-message");
   button.disabled = true;
+  status.textContent = "";
+  status.classList.remove("success", "error");
   try {
     await deleteDoc(doc(db, "expenses", expense.firestoreId));
     expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
     updateDashboard();
     renderExpenses();
+    status.textContent = `${expense.billNumber || expense.id} deleted.`;
+    status.classList.add("success");
   } catch (error) {
     console.error("Could not delete expense:", error);
-    $("#expense-message").textContent = firestoreActionError("Could not delete expense", error);
-    $("#expense-message").classList.add("error");
+    status.textContent = firestoreActionError("Could not delete expense", error);
+    status.classList.add("error");
   } finally {
     button.disabled = false;
   }

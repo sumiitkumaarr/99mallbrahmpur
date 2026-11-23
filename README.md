@@ -25,7 +25,7 @@ The app connects directly to Firebase from the browser.
 - Bill numbers use separate atomic sequences: `99BILL-0001`, `MANBILL-0001`, `MISEXPBILL-0001`, and `GOLMEDALBILL-0001`. The per-type counters are stored in `bill_counters`.
 - Manual bills require a reason (up to 300 characters); remarks are saved with the bill and shown in the sales table and printed receipt.
 - Goldmedal bills use the `goldmedal_sales` collection; their date and time are recorded automatically when saved, and remarks are required.
-- Individual 99 Mall and Goldmedal bills can be deleted with a confirmation popup followed by the `12345` deletion password.
+- Individual bills and expenses can be deleted from Recent Bills, Bills, All Reports, and their respective lists with a confirmation popup followed by the `12345` deletion password.
 - Both allowlisted emails can read and write 99 Mall sales, miscellaneous expenses, and Goldmedal bills. Reports remain separated by workspace and collection.
 - Changes to `firestore.rules` take effect only after publishing them to the `mallbrahmpur` Firebase project.
 

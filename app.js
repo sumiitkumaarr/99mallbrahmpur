@@ -313,10 +313,10 @@ function showAuth(view) {
   const setup = view === "setup";
   const reset = view === "reset";
   $("#auth-kicker").textContent = setup ? "LET'S GET YOU SET UP" : reset ? "ACCOUNT RECOVERY" : "WELCOME BACK";
-  $("#auth-title").textContent = setup ? "Create your store account" : reset ? "Reset your password" : "Sign in to your store";
+  $("#auth-title").textContent = setup ? "Create your store account" : reset ? "Reset your password" : "Welcome to 99mallbrahmpur";
   $("#auth-description").textContent = setup
     ? "Set up your owner account to start billing."
-    : reset ? "Enter your email to receive a secure password reset link." : "Enter your details to continue to billing.";
+    : reset ? "Enter your email to receive a secure password reset link." : "Sign in to continue.";
   $("#auth-switch").innerHTML = setup
     ? 'Already set up? <button class="text-button" type="button" data-auth-view="login">Sign in</button>'
     : reset
@@ -628,7 +628,7 @@ function renderDailySalesChart(sales) {
       grid: { top: 46, right: 12, bottom: 48, left: 48 },
       tooltip: {
         trigger: "axis",
-        axisPointer: { type: "shadow", shadowStyle: { color: "rgba(82, 116, 168, 0.08)" } },
+        axisPointer: { type: "shadow", shadowStyle: { color: "rgba(90, 92, 86, 0.08)" } },
         backgroundColor: "rgba(255, 255, 255, 0.96)",
         borderColor: "#dfe6f0",
         borderWidth: 1,
@@ -640,7 +640,7 @@ function renderDailySalesChart(sales) {
           const index = point.dataIndex;
           const day = days[index];
           return `<div style="font-weight:700;margin-bottom:5px">${formatDate(day.key)}</div>
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5274a8;margin-right:7px"></span>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#686b65;margin-right:7px"></span>
             Sales <b style="margin-left:8px">${formatCurrency(day.total)}</b>
             <div style="color:#8b94a0;margin-top:4px">${day.bills} ${day.bills === 1 ? "bill" : "bills"}</div>`;
         },
@@ -687,17 +687,17 @@ function renderDailySalesChart(sales) {
             borderRadius: [8, 8, 3, 3],
             color: index === days.length - 1
               ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: "#7ea4cd" },
-                  { offset: 1, color: "#5274a8" },
+                  { offset: 0, color: "#898b84" },
+                  { offset: 1, color: "#5c5f59" },
                 ])
               : new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: "#b0c3df" },
-                  { offset: 1, color: "#6688b3" },
+                  { offset: 0, color: "#d0cfc8" },
+                  { offset: 1, color: "#a5a59d" },
                 ]),
           },
         })),
         emphasis: {
-          itemStyle: { borderRadius: [8, 8, 3, 3], shadowBlur: 12, shadowColor: "rgba(82,116,168,.20)" },
+          itemStyle: { borderRadius: [8, 8, 3, 3], shadowBlur: 12, shadowColor: "rgba(75,77,71,.16)" },
         },
       }],
     }, true);
@@ -953,7 +953,7 @@ function renderGoldmedalReports() {
         value: day.total,
         itemStyle: {
           borderRadius: [8, 8, 3, 3],
-          color: index === days.length - 1 ? "#5274a8" : "#6688b3",
+          color: index === days.length - 1 ? "#686b65" : "#a5a59d",
         },
       })),
     }],

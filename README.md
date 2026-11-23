@@ -8,7 +8,8 @@ A lightweight billing app with separate 99 Mall and Aimur Goldmedal workspaces.
 2. Start the server: `npm start`
 3. Open `http://localhost:3000`
 4. Enable Email/Password authentication in Firebase.
-5. Publish the rules in `firestore.rules`.
+5. Publish the rules in `firestore.rules` to the `mallbrahmpur` project:
+   `firebase deploy --only firestore:rules --project mallbrahmpur`
 
 ## Firestore setup
 
@@ -18,7 +19,7 @@ The app connects directly to Firebase from the browser.
 - Only `sumiitkumar.it@gmail.com` and `amiitkumar.it@gmail.com` are allowed to sign in.
 - Firestore stores account records in `accounts/{uid}`.
 - Firestore stores sales in the shared `sales` collection. Both allowed email accounts see and add the same bills. On startup, existing sales, expenses, and Goldmedal records are assigned category-specific sequential bill numbers in creation order.
-- Use the project selector in the header to switch workspaces without signing in again. 99 Mall shows its billing, sales, and expenses; Aimur Goldmedal shows its separate Goldmedal bills and reports. The workspaces use the same Firebase project and login but separate Firestore collections.
+- Use the 99 Mall and Goldmedal buttons in the header to switch workspaces without signing in again. 99 Mall shows its billing, sales, and expenses; Aimur Goldmedal shows its separate Goldmedal bills and reports. The workspaces use the same Firebase project and login but separate Firestore collections.
 - Standard bills are validated at ₹99 per item, while manual bills can use any positive whole-rupee amount.
 - Bill numbers use separate atomic sequences: `99BILL-0001`, `MANBILL-0001`, `MISEXPBILL-0001`, and `GOLMEDALBILL-0001`. The per-type counters are stored in `bill_counters`.
 - Manual bills require a reason (up to 300 characters); remarks are saved with the bill and shown in the sales table and printed receipt.

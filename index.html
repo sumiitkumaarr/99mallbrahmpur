@@ -68,11 +68,10 @@
             <span class="crumb-separator">/</span>
             <strong id="page-breadcrumb">New bill</strong>
           </div>
-          <label class="project-switcher">
-            <select id="project-switcher" aria-label="Select project">
-              <option value="99mall">99 Mall</option>
-            </select>
-          </label>
+          <div class="project-switcher" role="group" aria-label="Switch store">
+            <button class="project-switch-button" type="button" data-project-switch="99mall" data-project-page="billing" aria-pressed="true">99 Mall</button>
+            <button class="project-switch-button" type="button" data-project-switch="aimur-goldmedal" data-project-page="goldmedal" aria-pressed="false">Goldmedal</button>
+          </div>
           <div class="topbar-right">
             <span id="header-date" class="header-date"></span>
             <button id="profile-avatar" class="profile-avatar" type="button" aria-label="Open account details" aria-haspopup="dialog" aria-controls="profile-dialog">S</button>
@@ -114,7 +113,6 @@
                   <label><input name="billing-mode" type="radio" value="standard" checked /> ₹99 per item</label>
                   <label><input name="billing-mode" type="radio" value="manual" /> Manual amount</label>
                   <label><input name="billing-mode" type="radio" value="expense" /> Misc. expenses</label>
-                  <label><input name="billing-mode" type="radio" value="goldmedal" /> Goldmedal Electrical</label>
                 </fieldset>
                 <div class="product-line"><div id="product-thumbnail" class="product-thumbnail">99</div><div class="product-info"><strong id="product-name">99 Mall item</strong><span id="product-description">Standard price · ₹99 each</span></div><span id="product-price" class="product-price">₹99</span></div>
                 <div class="checkout-controls">
@@ -153,12 +151,6 @@
                     <label class="manual-remarks-label" for="billing-expense-description">Remarks <span>(optional)</span></label>
                     <textarea id="billing-expense-description" maxlength="300" rows="3" placeholder="What was this expense for?" ></textarea>
                   </div>
-                  <div id="billing-goldmedal-entry" class="quantity-entry billing-expense-entry hidden">
-                    <label class="quantity-label" for="billing-goldmedal-amount">Goldmedal bill amount</label>
-                    <div class="manual-amount-control"><span>₹</span><input id="billing-goldmedal-amount" type="number" min="1" step="1" placeholder="1500" inputmode="numeric" aria-label="Enter Goldmedal Electrical bill amount" /></div>
-                    <label class="manual-remarks-label" for="billing-goldmedal-remarks">Remarks <span>(required)</span></label>
-                    <textarea id="billing-goldmedal-remarks" maxlength="300" rows="3" placeholder="Customer or item details"></textarea>
-                  </div>
                   <div class="bill-total"><span>Total amount</span><strong id="bill-total">₹99</strong></div>
                 </div>
                 <div class="bill-actions">
@@ -178,7 +170,7 @@
                   <article class="billing-report-stat"><span>This week</span><strong id="billing-report-week">₹0</strong><small id="billing-report-week-items">0 items sold</small></article>
                   <article class="billing-report-stat"><span>This month</span><strong id="billing-report-month">₹0</strong><small id="billing-report-month-count">0 bills this month</small></article>
                 </div>
-                <div class="billing-recent-heading"><h3>Recent bills</h3><span>Latest 5</span></div>
+                <div class="billing-recent-heading"><h3>Recent bills</h3><span>All bills</span></div>
                 <div id="billing-recent-sales" class="recent-sales billing-recent-sales"></div>
               </section>
             </div>
@@ -356,7 +348,7 @@
             </section>
             <section class="panel expense-list-panel">
               <div class="panel-heading expense-list-heading">
-                <div><h2>Goldmedal bills</h2><p id="goldmedal-list-subtitle">All Goldmedal records</p></div>
+                <div><h2>Recent Goldmedal bills</h2><p id="goldmedal-list-subtitle">All Goldmedal bills, newest first</p></div>
                 <div class="expense-date-controls">
                   <label class="bill-search-label" for="goldmedal-search-input"><span>Search</span><input id="goldmedal-search-input" type="search" placeholder="Bill number or remarks" autocomplete="off" /></label>
                   <label class="expense-date-filter"><span>Date</span><input id="goldmedal-date-filter" type="date" /></label>

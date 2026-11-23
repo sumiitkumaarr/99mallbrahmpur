@@ -115,9 +115,10 @@ button { cursor: pointer; }
 .back-button:disabled { cursor: default; opacity: .48; }
 .back-button:focus-visible,.workspace-link:focus-visible { outline: 3px solid #6296d588; outline-offset: 2px; }
 .crumb-separator { color: #c9c8d0; }
-.project-switcher { min-width: 0; }
-.project-switcher select { width: 100%; max-width: 190px; min-height: 40px; border: 1px solid #d8e2ee; border-radius: 10px; padding: 0 30px 0 12px; background: linear-gradient(135deg, #fff, #f3f7fc); color: #3e5b7f; font-size: 11px; font-weight: 700; }
-.project-switcher select:focus-visible { outline: 3px solid #6296d588; outline-offset: 2px; }
+.project-switcher { display: flex; min-width: 0; gap: 3px; border: 1px solid #d8e2ee; border-radius: 10px; padding: 3px; background: #f3f7fc; }
+.project-switch-button { min-height: 32px; border: 0; border-radius: 7px; padding: 0 10px; background: transparent; color: #64758c; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.project-switch-button.active { background: #fff; color: #3e5b7f; box-shadow: 0 1px 4px #2636501a; }
+.project-switch-button:focus-visible { outline: 3px solid #6296d588; outline-offset: 2px; }
 .app-screen[data-project="aimur-goldmedal"] .main-nav { grid-template-columns: 1fr; }
 .topbar-right { display: flex; align-items: center; gap: 17px; }
 .header-date { color: #81818c; font-size: 10px; }
@@ -465,7 +466,7 @@ button { cursor: pointer; }
 }
 @media (min-width: 681px) and (max-width: 850px) {
   .header-date,.workspace-link,.crumb-separator { display: none; }
-  .project-switcher select { max-width: 145px; }
+  .project-switch-button { padding-right: 8px; padding-left: 8px; }
 }
 @media (max-width: 380px) {
   .page-content { padding-right: 12px; padding-left: 12px; }
@@ -486,13 +487,15 @@ button { cursor: pointer; }
 }
 @media (max-width: 380px) {
   .topbar { gap: 5px; padding-right: 10px; padding-left: 10px; }
-  .project-switcher select { max-width: 116px; padding-right: 22px; }
+  .project-switcher { flex-basis: 110px; }
+  .project-switch-button { flex: 1; min-width: 0; padding-right: 4px; padding-left: 4px; font-size: 9px; }
   #page-breadcrumb { max-width: 58px; font-size: 9px; }
 }
 @media (max-width: 680px) {
   .app-screen[data-project="99mall"] .main-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .app-screen[data-project="aimur-goldmedal"] .main-nav { grid-template-columns: 1fr; }
-  .project-switcher select { max-width: 125px; min-height: 40px; padding-left: 9px; font-size: 10px; }
+  .project-switcher { flex: 0 1 125px; }
+  .project-switch-button { flex: 1; min-width: 0; padding-right: 6px; padding-left: 6px; font-size: 10px; }
   .topbar { gap: 7px; }
   .breadcrumb { min-width: 0; gap: 5px; }
   .workspace-link,.crumb-separator,.back-button span:last-child,.header-date { display: none; }
@@ -1326,10 +1329,6 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
     flex: 0 1 125px;
   }
 
-  .project-switcher select {
-    width: 100%;
-  }
-
   .topbar-right {
     gap: 7px;
   }
@@ -1411,11 +1410,6 @@ body { background: radial-gradient(ellipse at 86% 4%, #dbe8ff 0, transparent 30%
 
   .project-switcher {
     flex-basis: 110px;
-  }
-
-  .project-switcher select {
-    max-width: 110px;
-    padding-right: 20px;
   }
 
   .topbar-right {
@@ -1550,8 +1544,7 @@ body {
 .bill-search-label select,
 .daily-date-controls input,
 .daily-date-controls select,
-.expense-date-filter input,
-.project-switcher select {
+.expense-date-filter input {
   border-color: #deddd7;
   background: #fff;
   color: #454741;
@@ -1564,8 +1557,7 @@ body {
 .expense-form textarea:focus,
 .bill-search-label input:focus,
 .daily-date-controls input:focus,
-.daily-date-controls select:focus,
-.project-switcher select:focus-visible {
+.daily-date-controls select:focus {
   border-color: #a6a69e;
   box-shadow: 0 0 0 3px #7779721a;
 }

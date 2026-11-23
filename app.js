@@ -136,7 +136,11 @@ function clearAllDataLoadErrors() {
 function updateProjectUI() {
   const project = PROJECTS[activeProject];
   appScreen.dataset.project = activeProject;
-  $("#project-switcher").value = activeProject;
+  document.querySelectorAll("[data-project-switch]").forEach((button) => {
+    const selected = button.dataset.projectSwitch === activeProject;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
   $("#workspace-link").textContent = project.label;
   $("#store-name").textContent = project.label;
   $("#store-avatar").textContent = project.avatar;
@@ -326,18 +330,29 @@ function showAuth(view) {
         : 'First time here? <button class="text-button" type="button" data-auth-view="setup">Create your store account</button>';
 }
 
-function renderSalesList(container, sales, limit = Infinity) {
+function renderSalesList(container, sales) {
   if (!sales.length) {
     container.innerHTML = '<div class="empty-state">No bills yet. Create your first bill to see it here.</div>';
     return;
   }
-  container.innerHTML = sales.slice(0, limit).map((sale) => `
+  container.innerHTML = sales.map((sale) => `
     <article class="sale-row">
-      <div><div class="sale-id">${escapeHTML(sale.id)}</div><div class="sale-meta">${escapeHTML(sale.billType || (sale.manualAmount ? "Manual" : "99 Mall"))} · ${formatDate(sale.date)} · ${formatTime(sale.time)}</div></div>
-      <span class="sale-quantity">${sale.quantity} ${sale.quantity === 1 ? "item" : "items"}</span>
+      <div><div class="sale-id">${escapeHTML(sale.id)}</div><div class="sale-meta">${escapeHTML(sale.billType || (sale.manualAmount ? "Manual" : "99 Mall"))} · ${formatDate(sale.date)}${sale.time ? ` · ${formatTime(sale.time)}` : ""}</div></div>
+      <span class="sale-quantity">${sale.isExpense ? "Expense" : `${sale.quantity} ${sale.quantity === 1 ? "item" : "items"}`}</span>
       <strong class="sale-amount">${formatCurrency(sale.total)}</strong>
     </article>
   `).join("");
+}
+
+function recentBillOrder(left, right) {
+  const leftCreated = createdAtMillis(left.createdAt);
+  const rightCreated = createdAtMillis(right.createdAt);
+  if (leftCreated && rightCreated && leftCreated !== rightCreated) {
+    return rightCreated - leftCreated;
+  }
+  const leftDate = `${left.date || ""} ${left.time || ""}`;
+  const rightDate = `${right.date || ""} ${right.time || ""}`;
+  return rightDate.localeCompare(leftDate);
 }
 
 function escapeHTML(value) {
@@ -436,7 +451,17 @@ function updateDashboard() {
   $("#billing-report-week-items").textContent = `${summary.weekItems} items sold`;
   $("#billing-report-month").textContent = formatCurrency(summary.monthTotal);
   $("#billing-report-month-count").textContent = `${summary.monthSales.length} ${summary.monthSales.length === 1 ? "bill" : "bills"} this month`;
-  renderSalesList($("#billing-recent-sales"), sortedSales, 5);
+  const recentBills = [
+    ...sortedSales,
+    ...expenses.map((expense) => ({
+      ...expense,
+      id: expense.billNumber || expense.id || `MISEXPBILL-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
+      billType: expense.category ? `Misc. expenses · ${expense.category}` : BILL_TYPES.expense.label,
+      total: expense.amount,
+      isExpense: true,
+    })),
+  ].sort(recentBillOrder);
+  renderSalesList($("#billing-recent-sales"), recentBills);
   renderSalesTable(sortedSales);
   renderDailyReport(sortedSales);
   renderDailySalesChart(sortedSales);
@@ -1074,6 +1099,7 @@ async function deleteExpense(expense, button) {
   try {
     await deleteDoc(doc(db, "expenses", expense.firestoreId));
     expenses = expenses.filter((item) => item.firestoreId !== expense.firestoreId);
+    updateDashboard();
     renderExpenses();
   } catch (error) {
     console.error("Could not delete expense:", error);
@@ -1221,8 +1247,6 @@ function setPage(page, { updateHistory = true } = {}) {
     $("#billing-expense-amount").value = "";
     $("#billing-expense-category").value = "";
     $("#billing-expense-description").value = "";
-    $("#billing-goldmedal-amount").value = "";
-    $("#billing-goldmedal-remarks").value = "";
     updateBillingModeUI();
     $("#bill-message").textContent = "";
     $("#bill-message").classList.remove("error");
@@ -1269,7 +1293,7 @@ function setPage(page, { updateHistory = true } = {}) {
 function setProject(project, page) {
   if (!Object.hasOwn(PROJECTS, project)) return;
   if (project === activeProject) {
-    if (page) setPage(page);
+    if (page && page !== currentPage) setPage(page);
     return;
   }
   if (
@@ -1283,7 +1307,7 @@ function setProject(project, page) {
     )
     && !window.confirm("Switch projects and discard the unsaved 99 Mall bill?")
   ) {
-    $("#project-switcher").value = activeProject;
+    updateProjectUI();
     return;
   }
 
@@ -1302,6 +1326,7 @@ function setProject(project, page) {
     window.location.href,
   );
   setPage(page || PROJECTS[project].defaultPage, { updateHistory: false });
+  refreshLiveSalesReport();
 }
 
 async function enterApp() {
@@ -1362,7 +1387,9 @@ async function enterApp() {
 window.addEventListener("popstate", (event) => {
   const { appPage, appHistoryIndex } = event.state || {};
   if (!["billing", "sales", "expenses", "goldmedal"].includes(appPage)) return;
+  let projectChanged = false;
   if (Object.hasOwn(PROJECTS, event.state?.appProject)) {
+    projectChanged = activeProject !== event.state.appProject;
     activeProject = event.state.appProject;
     persistProject(activeProject);
     updateProjectUI();
@@ -1370,11 +1397,8 @@ window.addEventListener("popstate", (event) => {
   pageHistoryIndex = Number.isInteger(appHistoryIndex) ? appHistoryIndex : 0;
   if (!appScreen.classList.contains("hidden")) {
     setPage(appPage, { updateHistory: false });
+    if (projectChanged) refreshLiveSalesReport();
   }
-});
-
-$("#project-switcher").addEventListener("change", (event) => {
-  setProject(event.currentTarget.value);
 });
 
 function showFormError(form, message) {
@@ -1467,18 +1491,6 @@ function updateBillTotal() {
   const mode = $('input[name="billing-mode"]:checked').value;
   const manualMode = mode === "manual";
   const expenseMode = mode === "expense";
-  const goldmedalMode = mode === "goldmedal";
-  if (goldmedalMode) {
-    const parsedAmount = Number($("#billing-goldmedal-amount").value);
-    const remarks = $("#billing-goldmedal-remarks").value.trim();
-    const validAmount = $("#billing-goldmedal-amount").value.trim() !== ""
-      && Number.isSafeInteger(parsedAmount)
-      && parsedAmount > 0;
-    $("#save-bill").disabled = !(validAmount && remarks.length > 0 && remarks.length <= 300);
-    $("#print-bill-button").disabled = true;
-    $("#bill-total").textContent = validAmount ? formatCurrency(parsedAmount) : "—";
-    return null;
-  }
   if (expenseMode) {
     const parsedAmount = Number($("#billing-expense-amount").value);
     const validAmount = $("#billing-expense-amount").value.trim() !== ""
@@ -1514,31 +1526,22 @@ function updateBillingModeUI() {
   const mode = $('input[name="billing-mode"]:checked').value;
   const manualMode = mode === "manual";
   const expenseMode = mode === "expense";
-  const goldmedalMode = mode === "goldmedal";
   $("#quantity-entry").classList.toggle("hidden", manualMode);
   $("#manual-amount-entry").classList.toggle("hidden", !manualMode);
-  $("#quantity-entry").classList.toggle("hidden", manualMode || expenseMode || goldmedalMode);
+  $("#quantity-entry").classList.toggle("hidden", manualMode || expenseMode);
   $("#billing-expense-entry").classList.toggle("hidden", !expenseMode);
-  $("#billing-goldmedal-entry").classList.toggle("hidden", !goldmedalMode);
-  $("#fixed-price").innerHTML = goldmedalMode
-    ? "Goldmedal"
-    : expenseMode
+  $("#fixed-price").innerHTML = expenseMode
     ? "Outgoing"
     : manualMode ? "Custom <small>amount</small>" : "₹99 <small>/ item</small>";
-  $("#product-thumbnail").textContent = goldmedalMode || expenseMode || manualMode ? "₹" : "99";
-  $("#product-name").textContent = goldmedalMode
-    ? "Goldmedal Electrical"
-    : expenseMode ? "Miscellaneous expense" : manualMode ? "Manual bill" : "99 Mall item";
-  $("#product-description").textContent = goldmedalMode
-    ? "Goldmedal bill · remarks required"
-    : expenseMode
+  $("#product-thumbnail").textContent = expenseMode || manualMode ? "₹" : "99";
+  $("#product-name").textContent = expenseMode
+    ? "Miscellaneous expense" : manualMode ? "Manual bill" : "99 Mall item";
+  $("#product-description").textContent = expenseMode
     ? "Expense total · category required"
     : manualMode ? "Custom total · remarks required" : "Standard price · ₹99 each";
-  $("#product-price").textContent = goldmedalMode ? "Goldmedal" : expenseMode ? "Expense" : manualMode ? "Custom" : "₹99";
-  $("#save-bill").innerHTML = goldmedalMode
-    ? 'Save bill <span>→</span>'
-    : expenseMode ? 'Save expense <span>→</span>' : 'Save bill <span>→</span>';
-  $("#print-bill-button").classList.toggle("hidden", expenseMode || goldmedalMode);
+  $("#product-price").textContent = expenseMode ? "Expense" : manualMode ? "Custom" : "₹99";
+  $("#save-bill").innerHTML = expenseMode ? 'Save expense <span>→</span>' : 'Save bill <span>→</span>';
+  $("#print-bill-button").classList.toggle("hidden", expenseMode);
 }
 
 async function loadSales() {
@@ -1666,52 +1669,6 @@ async function saveGoldmedalBill(event) {
   }
 }
 
-async function saveBillingGoldmedal() {
-  const amount = Number($("#billing-goldmedal-amount").value);
-  const remarks = $("#billing-goldmedal-remarks").value.trim();
-  const button = $("#save-bill");
-  const message = $("#bill-message");
-  message.textContent = "";
-  message.classList.remove("error");
-
-  if (!Number.isSafeInteger(amount) || amount <= 0) {
-    message.textContent = "Enter a whole Goldmedal bill amount greater than zero.";
-    message.classList.add("error");
-    return;
-  }
-  if (!remarks) {
-    message.textContent = "Enter remarks for this Goldmedal bill.";
-    message.classList.add("error");
-    return;
-  }
-
-  button.disabled = true;
-  try {
-    const now = new Date();
-    await saveNumberedRecord("goldmedal", {
-      quantity: 1,
-      unitPrice: amount,
-      remarks,
-      total: amount,
-      date: localDateKey(now),
-      time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-    });
-    $("#billing-goldmedal-amount").value = "";
-    $("#billing-goldmedal-remarks").value = "";
-    await loadGoldmedalSales();
-    renderGoldmedalSales();
-    renderGoldmedalReports();
-    updateBillTotal();
-    message.textContent = `Goldmedal bill saved for ${formatCurrency(amount)}.`;
-  } catch (error) {
-    console.error("Could not save inline Goldmedal bill:", error);
-    message.textContent = firestoreActionError("Could not save Goldmedal bill", error);
-    message.classList.add("error");
-  } finally {
-    updateBillTotal();
-  }
-}
-
 async function saveBillingExpense() {
   const amount = Number($("#billing-expense-amount").value);
   const category = $("#billing-expense-category").value;
@@ -1744,6 +1701,7 @@ async function saveBillingExpense() {
     $("#billing-expense-category").value = "";
     $("#billing-expense-description").value = "";
     await loadExpenses();
+    updateDashboard();
     renderExpenses();
     updateBillTotal();
     message.textContent = `Expense saved for ${formatCurrency(amount)}.`;
@@ -1788,6 +1746,7 @@ async function saveExpense(event) {
     });
     $("#expense-form").reset();
     await loadExpenses();
+    updateDashboard();
     renderExpenses();
     message.textContent = `Expense saved for ${formatCurrency(amount)}.`;
   } catch (error) {
@@ -1866,9 +1825,11 @@ async function createBill({
 }
 
 document.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-auth-view], [data-go], [data-page], [data-sales-date], [data-delete-sale], [data-delete-expense], [data-delete-goldmedal]");
+  const target = event.target.closest("[data-project-switch], [data-auth-view], [data-go], [data-page], [data-sales-date], [data-delete-sale], [data-delete-expense], [data-delete-goldmedal]");
   if (!target) return;
-  if (target.dataset.deleteGoldmedal) {
+  if (target.dataset.projectSwitch) {
+    setProject(target.dataset.projectSwitch, target.dataset.projectPage);
+  } else if (target.dataset.deleteGoldmedal) {
     const sale = goldmedalSales.find((item) => item.firestoreId === target.dataset.deleteGoldmedal);
     if (sale) deleteGoldmedalSale(sale, target);
   } else if (target.dataset.deleteExpense) {
@@ -2004,10 +1965,6 @@ $("#manual-remarks").addEventListener("input", () => {
   $(selector).addEventListener("input", updateBillTotal);
   $(selector).addEventListener("change", updateBillTotal);
 });
-["#billing-goldmedal-amount", "#billing-goldmedal-remarks"].forEach((selector) => {
-  $(selector).addEventListener("input", updateBillTotal);
-  $(selector).addEventListener("change", updateBillTotal);
-});
 document.querySelectorAll('input[name="billing-mode"]').forEach((input) => {
   input.addEventListener("change", () => {
     updateBillingModeUI();
@@ -2021,10 +1978,6 @@ $("#quantity-plus").addEventListener("click", () => adjustQuantity("item-quantit
 
 $("#save-bill").addEventListener("click", () => {
   const mode = $('input[name="billing-mode"]:checked').value;
-  if (mode === "goldmedal") {
-    saveBillingGoldmedal();
-    return;
-  }
   if (mode === "expense") {
     saveBillingExpense();
     return;

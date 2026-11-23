@@ -332,12 +332,16 @@ function showAuth(view) {
 
 function renderSalesList(container, sales) {
   if (!sales.length) {
-    container.innerHTML = '<div class="empty-state">No bills yet. Create your first bill to see it here.</div>';
+    container.innerHTML = $("#sales-category-filter")?.value === "all"
+      ? '<div class="empty-state">No bills yet. Create your first bill to see it here.</div>'
+      : '<div class="empty-state">No records found for this report type.</div>';
     return;
   }
   container.innerHTML = sales.map((sale) => `
     <article class="sale-row">
-      <div><div class="sale-id">${escapeHTML(sale.id)}</div><div class="sale-meta">${escapeHTML(sale.billType || (sale.manualAmount ? "Manual" : "99 Mall"))} · ${formatDate(sale.date)}${sale.time ? ` · ${formatTime(sale.time)}` : ""}</div></div>
+      <div><div class="sale-id">${escapeHTML(sale.id)}</div><div class="sale-meta">${escapeHTML(sale.isExpense
+        ? `${sale.billType}${sale.categoryName ? ` · ${sale.categoryName}` : ""}`
+        : sale.billType || (sale.manualAmount || sale.billTypeKey === "manual" ? "Manual" : "99 Mall"))} · ${formatDate(sale.date)}${sale.time && !sale.isExpense ? ` · ${formatTime(sale.time)}` : ""}</div></div>
       <span class="sale-quantity">${sale.isExpense ? "Expense" : `${sale.quantity} ${sale.quantity === 1 ? "item" : "items"}`}</span>
       <strong class="sale-amount">${formatCurrency(sale.total)}</strong>
     </article>
@@ -387,20 +391,24 @@ function salesSummary(sales) {
 
 function salesByCategory(sales) {
   const category = $("#sales-category-filter")?.value || "all";
+  const reportExpenses = expenses.map((expense) => ({
+    id: expense.billNumber || `MISEXPBILL-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
+    billNumber: expense.billNumber,
+    firestoreId: expense.firestoreId,
+    createdAt: expense.createdAt,
+    date: expense.date,
+    time: "",
+    quantity: 0,
+    total: expense.amount,
+    remarks: expense.description || "",
+    manualAmount: false,
+    category: "expense",
+    categoryName: expense.category,
+    billType: "Miscellaneous expense",
+    isExpense: true,
+  }));
   if (category === "expense") {
-    return expenses.map((expense) => ({
-      id: expense.billNumber || `MISEXPBILL-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
-      billNumber: expense.billNumber,
-      firestoreId: expense.firestoreId,
-      date: expense.date,
-      time: "00:00",
-      quantity: 0,
-      total: expense.amount,
-      remarks: expense.description || expense.category || "",
-      manualAmount: false,
-      category: "expense",
-      categoryName: expense.category,
-    })).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return reportExpenses.sort(recentBillOrder);
   }
   if (category === "goldmedal") {
     return goldmedalSales.map((sale) => ({
@@ -410,9 +418,10 @@ function salesByCategory(sales) {
       category: "goldmedal",
     })).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   }
-  if (category === "standard") return sales.filter((sale) => sale.manualAmount !== true);
-  if (category === "manual") return sales.filter((sale) => sale.manualAmount === true);
-  return sales;
+  const isManualSale = (sale) => sale.manualAmount === true || sale.billTypeKey === "manual";
+  if (category === "standard") return sales.filter((sale) => !isManualSale(sale));
+  if (category === "manual") return sales.filter(isManualSale);
+  return [...sales, ...reportExpenses].sort(recentBillOrder);
 }
 
 function updateDashboard() {
@@ -435,32 +444,26 @@ function updateDashboard() {
   const sortedSales = [...sales].sort((a, b) => createdAtMillis(b.createdAt) - createdAtMillis(a.createdAt));
   const reportSales = salesByCategory(sortedSales);
   const summary = salesSummary(reportSales);
+  const isAllReports = $("#sales-category-filter").value === "all";
+  const reportCountLabel = (count) => `${count} ${isAllReports ? "records" : count === 1 ? "bill" : "bills"}`;
   $("#report-today").textContent = formatCurrency(summary.todayTotal);
-  $("#report-today-count").textContent = `${summary.todaySales.length} ${summary.todaySales.length === 1 ? "bill" : "bills"}`;
+  $("#report-today-count").textContent = reportCountLabel(summary.todaySales.length);
   $("#report-yesterday").textContent = formatCurrency(summary.yesterdayTotal);
-  $("#report-yesterday-count").textContent = `${summary.yesterdaySales.length} ${summary.yesterdaySales.length === 1 ? "bill" : "bills"} yesterday`;
+  $("#report-yesterday-count").textContent = `${reportCountLabel(summary.yesterdaySales.length)} yesterday`;
   $("#report-week").textContent = formatCurrency(summary.weekTotal);
   $("#report-week-items").textContent = `${summary.weekItems} items sold`;
   $("#report-month").textContent = formatCurrency(summary.monthTotal);
-  $("#report-month-count").textContent = `${summary.monthSales.length} ${summary.monthSales.length === 1 ? "bill" : "bills"}`;
+  $("#report-month-count").textContent = reportCountLabel(summary.monthSales.length);
   $("#billing-report-today").textContent = formatCurrency(summary.todayTotal);
-  $("#billing-report-today-count").textContent = `${summary.todaySales.length} ${summary.todaySales.length === 1 ? "bill" : "bills"} today`;
+  $("#billing-report-today-count").textContent = `${reportCountLabel(summary.todaySales.length)} today`;
   $("#billing-report-yesterday").textContent = formatCurrency(summary.yesterdayTotal);
-  $("#billing-report-yesterday-count").textContent = `${summary.yesterdaySales.length} ${summary.yesterdaySales.length === 1 ? "bill" : "bills"} yesterday`;
+  $("#billing-report-yesterday-count").textContent = `${reportCountLabel(summary.yesterdaySales.length)} yesterday`;
   $("#billing-report-week").textContent = formatCurrency(summary.weekTotal);
   $("#billing-report-week-items").textContent = `${summary.weekItems} items sold`;
   $("#billing-report-month").textContent = formatCurrency(summary.monthTotal);
-  $("#billing-report-month-count").textContent = `${summary.monthSales.length} ${summary.monthSales.length === 1 ? "bill" : "bills"} this month`;
-  const recentBills = [
-    ...sortedSales,
-    ...expenses.map((expense) => ({
-      ...expense,
-      id: expense.billNumber || expense.id || `MISEXPBILL-${expense.firestoreId?.slice(-8).toUpperCase() || ""}`,
-      billType: expense.category ? `Misc. expenses · ${expense.category}` : BILL_TYPES.expense.label,
-      total: expense.amount,
-      isExpense: true,
-    })),
-  ].sort(recentBillOrder);
+  $("#billing-report-month-count").textContent = `${reportCountLabel(summary.monthSales.length)} this month`;
+  const recentBills = salesByCategory(sortedSales);
+  $("#billing-recent-filter-label").textContent = $("#sales-category-filter").selectedOptions[0].textContent;
   renderSalesList($("#billing-recent-sales"), recentBills);
   renderSalesTable(sortedSales);
   renderDailyReport(sortedSales);
@@ -484,10 +487,12 @@ function renderSalesTable(sales) {
       const searchableValues = [
         sale.id,
         sale.billNumber,
+        sale.billType,
+        sale.categoryName,
         sale.quantity,
         sale.total,
         sale.remarks,
-        sale.manualAmount ? "manual" : "standard",
+        sale.isExpense ? "miscellaneous expense" : sale.manualAmount || sale.billTypeKey === "manual" ? "manual" : "99 mall",
       ];
       return searchableValues.some((value) =>
         String(value || "").toLowerCase().replace(/[₹,\s]/g, "").includes(search),
@@ -503,13 +508,15 @@ function renderSalesTable(sales) {
   if (filter) filterParts.push(`for ${formatDate(filter)}`);
   if (rawSearch) filterParts.push(`matching "${rawSearch}"`);
   $("#sales-subtitle").textContent = filterParts.length
-    ? `Showing ${filtered.length} ${filtered.length === 1 ? "bill" : "bills"} ${filterParts.join(" ")}`
-    : `${sales.length} ${sales.length === 1 ? "bill" : "bills"} recorded`;
+    ? `Showing ${filtered.length} ${category === "all" ? "records" : filtered.length === 1 ? "bill" : "bills"} ${filterParts.join(" ")}`
+    : category === "all"
+      ? `${filtered.length} records across all reports`
+      : `${filtered.length} ${filtered.length === 1 ? "bill" : "bills"} recorded`;
   const container = $("#sales-table-wrap");
   if (!filtered.length) {
     container.innerHTML = search || filter
-      ? '<div class="sales-empty">No bills found for this search or date.</div>'
-      : '<div class="sales-empty">No bills found.</div>';
+      ? `<div class="sales-empty">No ${category === "all" ? "report records" : "bills"} found for this search or date.</div>`
+      : `<div class="sales-empty">No ${category === "all" ? "report records" : "bills"} found.</div>`;
     return;
   }
   const selectedCategory = $("#sales-category-filter").value;
@@ -549,10 +556,14 @@ function renderSalesTable(sales) {
     <table class="sales-table">
       <thead><tr><th>Bill</th><th>Type</th><th>Date</th><th>Time</th><th>Items</th><th>Remarks</th><th>Amount</th><th>Action</th></tr></thead>
       <tbody>${filtered.map((sale) => `
-        <tr><td>${escapeHTML(sale.id)}</td><td>${escapeHTML(sale.billType || (sale.manualAmount ? "Manual" : "99 Mall"))}</td><td>${formatDate(sale.date)}</td><td>${formatTime(sale.time)}</td>
-        <td>${sale.quantity}</td><td>${sale.manualAmount ? escapeHTML(sale.remarks || "—") : "—"}</td>
+        <tr><td>${escapeHTML(sale.id)}</td><td>${escapeHTML(sale.isExpense
+          ? `${sale.billType}${sale.categoryName ? ` · ${sale.categoryName}` : ""}`
+          : sale.billType || (sale.manualAmount || sale.billTypeKey === "manual" ? "Manual" : "99 Mall"))}</td><td>${formatDate(sale.date)}</td><td>${sale.isExpense ? "—" : formatTime(sale.time)}</td>
+        <td>${sale.isExpense ? "—" : sale.quantity}</td><td>${sale.isExpense || sale.manualAmount || sale.billTypeKey === "manual" ? escapeHTML(sale.remarks || "—") : "—"}</td>
         <td class="table-amount">${formatCurrency(sale.total)}</td>
-        <td><button class="button button-danger delete-sale-button" type="button" data-delete-sale="${escapeHTML(sale.firestoreId)}" aria-label="Delete bill ${escapeHTML(sale.id)}">Delete</button></td></tr>
+        <td>${sale.isExpense
+          ? `<button class="button button-danger delete-expense-button" type="button" data-delete-expense="${escapeHTML(sale.firestoreId)}" aria-label="Delete ${escapeHTML(sale.categoryName || "miscellaneous")} expense">Delete</button>`
+          : `<button class="button button-danger delete-sale-button" type="button" data-delete-sale="${escapeHTML(sale.firestoreId)}" aria-label="Delete bill ${escapeHTML(sale.id)}">Delete</button>`}</td></tr>
       `).join("")}</tbody>
     </table>`;
 }

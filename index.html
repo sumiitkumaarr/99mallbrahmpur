@@ -170,7 +170,7 @@
                   <article class="billing-report-stat"><span>This week</span><strong id="billing-report-week">₹0</strong><small id="billing-report-week-items">0 items sold</small></article>
                   <article class="billing-report-stat"><span>This month</span><strong id="billing-report-month">₹0</strong><small id="billing-report-month-count">0 bills this month</small></article>
                 </div>
-                <div class="billing-recent-heading"><h3>Recent bills</h3><span>All bills</span></div>
+                <div class="billing-recent-heading"><h3>Recent bills</h3><span id="billing-recent-filter-label">All reports</span></div>
                 <div id="billing-recent-sales" class="recent-sales billing-recent-sales"></div>
               </section>
             </div>
@@ -219,20 +219,20 @@
                 </div>
               </div>
               <div class="daily-report-stats">
-                <article><span>Total sales</span><strong id="daily-report-total">—</strong></article>
+                <article><span>Total amount</span><strong id="daily-report-total">—</strong></article>
                 <article><span>Bills</span><strong id="daily-report-bills">—</strong></article>
                 <article><span>Items sold</span><strong id="daily-report-items">—</strong></article>
               </div>
             </section>
             <section class="panel sales-chart-panel">
               <div class="panel-heading sales-chart-heading">
-                <div><h2>Sales trend</h2><p id="sales-chart-period">Daily totals for the last 7 days</p></div>
-                <span class="chart-legend"><span></span>Sales</span>
+                <div><h2>Report trend</h2><p id="sales-chart-period">Daily totals for the last 7 days</p></div>
+                <span class="chart-legend"><span></span>Amount</span>
               </div>
               <div id="daily-sales-chart" class="daily-sales-chart" role="img" aria-label="Daily sales bar chart for the last 7 days"></div>
             </section>
             <section class="panel sales-panel">
-              <div class="panel-heading sales-heading"><div><h2>All bills</h2><p id="sales-subtitle">A complete record of your sales</p></div>
+              <div class="panel-heading sales-heading"><div><h2>All records</h2><p id="sales-subtitle">Records matching the selected report type and filters</p></div>
                 <div class="sales-date-controls">
                   <label class="bill-search-label" for="sales-category-filter">
                     <span>Report type</span>

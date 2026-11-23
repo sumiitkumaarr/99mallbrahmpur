@@ -21,6 +21,7 @@ The app connects directly to Firebase from the browser.
 - Firestore stores sales in the shared `sales` collection. Both allowed email accounts see and add the same bills. On startup, existing sales, expenses, and Goldmedal records are assigned category-specific sequential bill numbers in creation order.
 - Use the 99 Mall and Goldmedal buttons in the header to switch workspaces without signing in again. 99 Mall shows its billing, sales, and expenses; Aimur Goldmedal shows its separate Goldmedal bills and reports. The workspaces use the same Firebase project and login but separate Firestore collections.
 - Standard bills are validated at ₹99 per item, while manual bills can use any positive whole-rupee amount.
+- The 99 Mall “All reports” view includes standard 99 Mall bills, manual bills, and miscellaneous expenses; each type can also be viewed separately.
 - Bill numbers use separate atomic sequences: `99BILL-0001`, `MANBILL-0001`, `MISEXPBILL-0001`, and `GOLMEDALBILL-0001`. The per-type counters are stored in `bill_counters`.
 - Manual bills require a reason (up to 300 characters); remarks are saved with the bill and shown in the sales table and printed receipt.
 - Goldmedal bills use the `goldmedal_sales` collection; their date and time are recorded automatically when saved, and remarks are required.
